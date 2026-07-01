@@ -128,18 +128,27 @@ footer {visibility: hidden}
 """
 
 
-demo = gr.ChatInterface(
-    fn=responder,
-    title="🍂 Chef Creativo — RestaurantEAI",
-    cache_examples=False,  # deshabilitar cache de ejemplos (en HF Spaces los .csv no persisten entre reinicios)
-    description=(
-        "Generador de fichas culinarias con IA. Pedime un plato en lenguaje natural "
-        "y te devuelvo nombre, historia, ficha técnica, maridaje y prompt para imagen."
-    ),
-    examples=PROMPT_EJEMPLOS,
+# Gradio 6.19+ cambió la API de ChatInterface:
+#   - 'theme' y 'css' NO se pasan al ChatInterface, van al gr.Blocks contenedor.
+#   - 'type' ya no es kwarg del ChatInterface; se setea via el chatbot custom.
+with gr.Blocks(
     theme=gr.themes.Soft(primary_hue="orange"),
     css=CUSTOM_CSS,
-)
+) as demo:
+    gr.ChatInterface(
+        fn=responder,
+        title="🍂 Chef Creativo — RestaurantEAI",
+        cache_examples=False,
+        description=(
+            "Generador de fichas culinarias con IA. Pedime un plato en lenguaje natural "
+            "y te devuelvo nombre, historia, ficha técnica, maridaje y prompt para imagen."
+        ),
+        examples=PROMPT_EJEMPLOS,
+        chatbot=gr.Chatbot(
+            type="messages",
+            avatar_images=(None, "🍂"),
+        ),
+    )
 
 
 # ---------------------------------------------------------------------------
