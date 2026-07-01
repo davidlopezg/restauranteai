@@ -271,7 +271,7 @@ with gr.Blocks() as demo:
             "y te devuelvo nombre, historia, ficha técnica, maridaje y prompt para imagen. "
             "Cambiá el selector de arriba para ver el proceso creativo paso a paso."
         ),
-        examples=EJEMPLOS_FICHA,
+        examples=[[e] for e in EJEMPLOS_FICHA],  # lista de listas: [ejemplo_texto] cuando hay additional_inputs
         additional_inputs=[skill_selector],
         chatbot=gr.Chatbot(
             avatar_images=(None, "🍂"),
