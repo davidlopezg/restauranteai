@@ -367,3 +367,44 @@ python_version: '3.11'
 **Notas operativas:**
 - NO pushear a `hf` los cambios de `openspec/` — son docs/dev, no afectan al Space.
 - Push solo a `origin` (GitHub).
+
+### 2026-07-02 — Hallazgo de `sdd-explore`: skill `ideas_creativas` ya existía
+
+La skill `ideas_creativas` (en `agents/creativo/skills.py:54-66`, con handler en `app.py:129` y prompt en `prompts/system_ideas_creativas.md`) ya hacía el 70% de lo que el Archivo de Ideas requería — generaba 10 ideas vía LLM, soportaba iteraciones con métodos creativos, convertía a ficha. **Lo que NO hacía: persistir**. Se perdían al cerrar el chat.
+
+**Implicación de diseño:** el Archivo de Ideas es **complemento persistente** de `ideas_creativas`, no skill nueva paralela. Decisión: implementar como **módulo transversal** (`agents/memoria/`) con comandos `/guardar /ideas /olvidar /export-ideas /deshacer /ayuda` disponibles desde CUALQUIER skill, detectado ANTES del dispatcher de skill.
+
+**Refuerzo explícito de David:** el comando `/guardar` debe aceptar ideas que NO vengan de `ideas_creativas`. Casos cubiertos:
+- `/guardar [texto libre]` → guarda el texto literal (cualquier skill)
+- `/guardar` (sin args) → guarda el último mensaje del agente como idea
+- `/guardar N` → guarda la idea N de la última respuesta del agente (caso típico desde `ideas_creativas`)
+
+**Decisiones validadas por David (2026-07-02) tras explore:**
+1. D1 storage SQLite OK (WAL + timeout 5.0)
+2. D2 schema 8 campos OK (David me da libertad para detalles)
+3. D3 trigger mixto OK
+4. D4 comandos transversales OK (con refuerzo: libres, no solo desde ideas_creativas)
+5. D5 RGPD sin cifrado + olvidar + export OK
+6. D6 fuera de scope v1 (retrieval, sync, cifrado, LLM-categorización) OK
+7. Categorías en JSON editable — David dice "después tal vez las cambie", el patrón ya está cubierto
+8. Nombres de comandos OK
+9. Palabras gatillo OK
+10. Schema OK
+
+**Decisiones de producto validadas por David (2026-07-02) tras ronda de preguntas:**
+1. Q1 Momento propuesta: SOLO comando `/guardar` (sin propuesta automática del agente). Elimina toda la rama de triggers.
+2. Q2 Duplicados: detección exacta + fuzzy (≥80% similitud). Implementar en `storage.py`.
+3. Q3 Edición post-guardado: sí, editable, con campo `updated_at` en el schema.
+4. Q4 Contador visible: sí, "📁 X guardadas" con opt-out `/silenciar-contador`. Suma comando + feedback visual.
+5. Q5 Relación con catálogo: NO en v1. Sí en v2 al FINALIZAR el proceso creativo.
+
+**Cambio de diseño importante vs explore original:**
+- Sin propuesta automática del agente → invariante de consentimiento trivial (comando = consentimiento).
+- Eliminados del scope: `agents/ideas_triggers.json`, `agents/memoria/triggers.py`, lógica de consent en 2 turnos, `test_memoria_triggers.py`.
+- Sumados al scope: detección de duplicados, edición post-guardado con `updated_at`, comando `/silenciar-contador`, contador visible.
+
+**Lección operativa (importante para futuras delegaciones SDD):** el agent `sdd-explore` (user-level) NO tiene tools de escritura (`write`/`edit`) — solo `read`, `grep`, `glob`, `webfetch`, `mem_save`. Cuando lo delegué para esta fase, el subagent completó el trabajo pero no pudo persistir el `explore.md`, así que tuve que sintetizarlo yo en el orchestrator. El mismo problema va a existir con `sdd-proposal`, `sdd-spec`, `sdd-design`, `sdd-tasks`. **Workaround aplicado:** delegar con task que pida devolver el contenido completo del artifact como string en la respuesta, y yo lo persisto con `write`.
+
+**Lección operativa (importante para futuras delegaciones SDD):** el agent `sdd-explore` (user-level) NO tiene tools de escritura (`write`/`edit`) — solo `read`, `grep`, `glob`, `webfetch`, `mem_save`. Cuando lo delegué para esta fase, el subagent completó el trabajo pero no pudo persistir el `explore.md`, así que tuve que sintetizarlo yo en el orchestrator. El mismo problema va a existir con `sdd-proposal`, `sdd-spec`, `sdd-design`, `sdd-tasks`. **Workaround aplicado:** delegar con task que pida devolver el contenido completo del artifact como string en la respuesta, y yo lo persisto con `write`.
+
+**Pendiente inmediato:** delegar `sdd-proposal` con el workaround del contenido inline.
