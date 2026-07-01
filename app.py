@@ -35,9 +35,15 @@ import gradio as gr
 
 from agents.creativo.agent import (
     load_system_prompt,
+    load_skill_prompt,
     load_estacionalidad,
     check_estacionalidad,
     call_minimax,
+)
+from agents.creativo.skills import (
+    list_skills,
+    skill_names_for_ui,
+    load_skill_prompt as load_skill_prompt_from_registry,
 )
 
 # Logger seguro (no expone la key ni stack traces completos)
@@ -58,16 +64,32 @@ logger.info("Chef Creativo — recursos cargados correctamente")
 # Lógica del chat
 # ---------------------------------------------------------------------------
 
-def responder(mensaje: str, historial: list) -> dict:
+# Cache de prompts por skill para evitar releer el .md en cada request
+_SKILL_PROMPTS: dict[str, str] = {}
+
+
+def _get_skill_prompt(skill_key: str) -> str:
+    """Carga y cachea el system prompt de la skill."""
+    if skill_key not in _SKILL_PROMPTS:
+        try:
+            _SKILL_PROMPTS[skill_key] = load_skill_prompt_from_registry(skill_key)
+        except (KeyError, FileNotFoundError) as e:
+            logger.warning(f"No se pudo cargar skill '{skill_key}': {e}. Fallback a 'ficha'.")
+            _SKILL_PROMPTS[skill_key] = SYSTEM_PROMPT  # fallback al prompt clásico
+    return _SKILL_PROMPTS[skill_key]
+
+
+def responder(mensaje: str, historial: list, skill: str = "ficha") -> dict:
     """
     Procesa una petición del usuario y devuelve la ficha del chef.
 
     Firma compatible con gr.ChatInterface de Gradio 5+ en formato 'messages':
-        fn(mensaje: str, historial: list) -> dict con {role, content}
+        fn(mensaje: str, historial: list, skill: str) -> dict con {role, content}
 
     Args:
         mensaje: texto crudo que escribió el usuario.
         historial: lista de mensajes previos (formato messages API).
+        skill: key de la skill ('ficha' o 'proceso_creativo').
 
     Returns:
         Dict con la respuesta del chef en formato messages.
@@ -77,7 +99,9 @@ def responder(mensaje: str, historial: list) -> dict:
         return {"role": "assistant", "content": ""}
 
     timestamp = datetime.now().strftime("%H:%M:%S")
-    logger.info(f"[{timestamp}] Nueva petición (len={len(mensaje)})")
+    logger.info(f"[{timestamp}] Nueva petición (skill={skill}, len={len(mensaje)})")
+
+    system_prompt = _get_skill_prompt(skill)
 
     try:
         # Inyectamos el aviso de estacionalidad como contexto privado al chef.
@@ -101,7 +125,7 @@ def responder(mensaje: str, historial: list) -> dict:
         )
         user_message = user_message + instruccion_idioma
 
-        respuesta = call_minimax(SYSTEM_PROMPT, user_message)
+        respuesta = call_minimax(system_prompt, user_message)
         return {"role": "assistant", "content": respuesta}
 
     except Exception as e:
@@ -122,13 +146,14 @@ def responder(mensaje: str, historial: list) -> dict:
 # UI con Gradio 5+
 # ---------------------------------------------------------------------------
 
-PROMPT_EJEMPLOS = [
-    "Entrante vegetariano con calabaza y queso de cabra",
-    "Postre con chocolate y aceite de oliva",
-    "Principal de carne para menú degustación de 7 pasos",
-    "Plato de verano con tomate y anchoas",
-    "Risotto de setas con trufa, para noche de gala",
-]
+# Lista dinámica de skills (cargada del registry)
+SKILLS = list_skills()
+SKILL_CHOICES = skill_names_for_ui()  # [(key, nombre_visible), ...]
+
+# Ejemplos para la skill 'ficha' (la default). Los de otras skills viven en skills.py.
+EJEMPLOS_FICHA = next(
+    s["ejemplos"] for s in SKILLS if s["key"] == "ficha"
+)
 
 CUSTOM_CSS = """
 #titulo {
@@ -144,16 +169,28 @@ footer {visibility: hidden}
 #   - ChatInterface no acepta 'type' (ya no existe como kwarg)
 #   - Chatbot no acepta 'type' (en 6 es default 'messages' automático)
 #   - Mi responder() ya devuelve dict {role, content}, así que messages es el default natural
+#   - additional_inputs pasa inputs adicionales al fn (aca: selector de skill)
 with gr.Blocks() as demo:
+    skill_selector = gr.Radio(
+        choices=SKILL_CHOICES,
+        value="ficha",
+        label="¿Qué necesitás del chef?",
+        info=(
+            "Ficha técnica: respuesta estructurada directa. "
+            "Proceso creativo: muestra paso a paso cómo piensa el chef, después la ficha."
+        ),
+    )
     gr.ChatInterface(
         fn=responder,
         title="🍂 Chef Creativo — RestaurantEAI",
         cache_examples=False,
         description=(
             "Generador de fichas culinarias con IA. Pedime un plato en lenguaje natural "
-            "y te devuelvo nombre, historia, ficha técnica, maridaje y prompt para imagen."
+            "y te devuelvo nombre, historia, ficha técnica, maridaje y prompt para imagen. "
+            "Cambiá el selector de arriba para ver el proceso creativo paso a paso."
         ),
-        examples=PROMPT_EJEMPLOS,
+        examples=EJEMPLOS_FICHA,
+        additional_inputs=[skill_selector],
         chatbot=gr.Chatbot(
             avatar_images=(None, "🍂"),
         ),

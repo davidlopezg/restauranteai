@@ -80,6 +80,20 @@ def load_system_prompt() -> str:
     return PROMPT_PATH.read_text(encoding="utf-8")
 
 
+def load_skill_prompt(skill_key: str) -> str:
+    """
+    Carga el system prompt de una skill específica (ej: 'ficha', 'proceso_creativo').
+    Por retrocompatibilidad, 'ficha' usa el system_chef.md clásico.
+
+    Import local para evitar circular import: agent.py -> skills.py -> agent.py
+    """
+    if skill_key == "ficha":
+        # Retrocompat: la skill original sigue viviendo en system_chef.md
+        return load_system_prompt()
+    from agents.creativo.skills import load_skill_prompt as _loader
+    return _loader(skill_key)
+
+
 def load_estacionalidad() -> dict:
     """Carga el calendario de estacionalidad de Cataluña."""
     if not ESTACIONALIDAD_PATH.exists():
@@ -281,11 +295,21 @@ def check_estacionalidad(peticion: str, estacionalidad: dict) -> Optional[str]:
 
 # --- Loop principal ----------------------------------------------------------
 
-def generar_ficha(peticion: str) -> str:
-    """Genera la ficha estructurada del chef."""
-    system_prompt = load_system_prompt()
+def generar_ficha(peticion: str, skill_key: str = "ficha") -> str:
+    """
+    Genera la respuesta del chef usando la skill indicada.
+
+    Args:
+        peticion: texto libre del usuario con la petición culinaria.
+        skill_key: 'ficha' (default, ficha técnica estructurada) o 'proceso_creativo'
+                   (proceso paso a paso + ficha al final).
+
+    Returns:
+        String con la respuesta del chef.
+    """
+    system_prompt = load_skill_prompt(skill_key)
     estacionalidad = load_estacionalidad()
-    
+
     # Aviso de estacionalidad (se inyecta al prompt como contexto, no como instrucción dura)
     aviso = check_estacionalidad(peticion, estacionalidad)
     contexto_adicional = ""
@@ -293,7 +317,7 @@ def generar_ficha(peticion: str) -> str:
         contexto_adicional = (
             f"\n\n[CONTEXTO PARA TI — NO INCLUIR EN LA SALIDA]: {aviso}"
         )
-    
+
     user_message = peticion + contexto_adicional
 
     # 🚨 INSTRUCCIÓN DE IDIOMA AL FINAL DEL MENSAJE — máxima autoridad posicional.
@@ -315,7 +339,7 @@ def generar_ficha(peticion: str) -> str:
 
     user_message = user_message + instruccion_idioma
     
-    print(f"🍳 Generando ficha para: \"{peticion}\"...\n", file=sys.stderr)
+    print(f"🍳 Generando (skill={skill_key}) para: \"{peticion}\"...\n", file=sys.stderr)
     respuesta = call_minimax(system_prompt, user_message)
     return respuesta
 
@@ -328,14 +352,41 @@ def modo_interactivo():
     if ensure_initialized():
         print("(A partir de ahora, el agente conoce tu restaurante y catálogo.)\n")
 
+    # Cargar lista de skills disponibles dinámicamente
+    from agents.creativo.skills import list_skills
+
     print("=" * 60)
     print("🍂 Chef Creativo — Modo Interactivo")
     print("=" * 60)
     rest = cargar_restaurante()
     if rest.get("nombre"):
         print(f"Restaurante: {rest.get('nombre')}")
+
+    # Selector de skill al inicio
+    skills = list_skills()
+    print("\nElegí la skill con la que querés trabajar:")
+    for i, s in enumerate(skills, 1):
+        print(f"  {i}. {s['nombre']}  —  {s['descripcion']}")
+    print(f"  {len(skills) + 1}. Cambiar skill en cualquier momento (escribí /skill <key>)")
+
+    skill_key = "ficha"
+    while True:
+        r = input(f"   Elige 1-{len(skills)} [{skill_key}] > ").strip()
+        if not r:
+            break  # usa el default
+        if r.isdigit() and 1 <= int(r) <= len(skills):
+            skill_key = skills[int(r) - 1]["key"]
+            break
+        print(f"   (elegí un número entre 1 y {len(skills)})")
+
+    skill_actual = next(s for s in skills if s["key"] == skill_key)
+    print(f"\n✓ Skill activa: {skill_actual['nombre']}\n")
+
     print("Escribí tu petición culinaria y presioná Enter.")
-    print("Escribí 'salir' para terminar.\n")
+    print("Comandos especiales:")
+    print("  /skill        — cambiar skill")
+    print("  /skills       — listar skills disponibles")
+    print("  salir         — terminar\n")
 
     while True:
         try:
@@ -343,14 +394,36 @@ def modo_interactivo():
         except (EOFError, KeyboardInterrupt):
             print("\n¡Hasta luego!")
             break
-        
+
         if not peticion:
             continue
         if peticion.lower() in ("salir", "exit", "quit"):
             break
-        
+
+        # Comandos slash
+        if peticion.lower() == "/skill":
+            print("\nCambiar skill:")
+            for i, s in enumerate(skills, 1):
+                marker = " (actual)" if s["key"] == skill_key else ""
+                print(f"  {i}. {s['nombre']}{marker}")
+            r = input(f"   Elige 1-{len(skills)} > ").strip()
+            if r.isdigit() and 1 <= int(r) <= len(skills):
+                skill_key = skills[int(r) - 1]["key"]
+                skill_actual = next(s for s in skills if s["key"] == skill_key)
+                print(f"\n✓ Skill activa: {skill_actual['nombre']}\n")
+            else:
+                print("   (opción inválida, sin cambios)\n")
+            continue
+        if peticion.lower() == "/skills":
+            print("\nSkills disponibles:")
+            for s in skills:
+                marker = " (actual)" if s["key"] == skill_key else ""
+                print(f"  · {s['nombre']}{marker}  —  {s['descripcion']}")
+            print()
+            continue
+
         try:
-            ficha = generar_ficha(peticion)
+            ficha = generar_ficha(peticion, skill_key=skill_key)
             print("\n" + ficha + "\n")
             print("-" * 60 + "\n")
         except Exception as e:
