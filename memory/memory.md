@@ -50,7 +50,56 @@
 - Iteración de system prompt: ⏳ (próximo paso)
 - MVP-0.5 código (app.py + Gradio): ✅ (cableado, pendiente deploy a HF)
 - MVP-0.5 código pusheado a HF Space: ✅ (2026-07-01, conflicto resuelto vía `git pull --rebase hf main` + `git checkout --theirs README.md`)
-- MVP-0.5 deploy público verificado: ⏳ (depende de que David cargue el Secret `MINIMAX_API_KEY` y verifique arranque)
+- MVP-0.5 deploy público verificado: ⏳ (saga de fixes en curso, ver bloque "Deploy saga" abajo)
+
+### 2026-07-01 — Deploy saga: 8 fixes consecutivos para llevar el Space a Running
+
+**Leccion raíz: HF Spaces NO es entorno amigable para Gradio 4.x con deps modernas. Cada pineo destapa otro bug. La salida real es Gradio 5.6+.**
+
+#### Saga cronológica
+
+| # | Commit | Bug | Causa | Solución |
+|---|---|---|---|---|
+| 1 | `a6d97ab` | `ModuleNotFoundError: audioop` | HF default = Python 3.13, que quitó `audioop` de stdlib | `python_version: '3.11'` en frontmatter |
+| 2 | `dd866d9` | `ImportError: HfFolder` | `huggingface_hub>=1.0` lo eliminó | `huggingface_hub>=0.19.3,<1.0` en requirements.txt |
+| 3 | `77ab782` | `UnboundLocalError: msg` | bug propio de `app.py`: botones referenciaban `msg` antes de definirlo | reordenar layout (msg antes de los loops de ejemplos) |
+| 4 | `f2a8bb9` | `TypeError: bool is not iterable` en `json_schema_to_python_type` | bug de `gradio_client 1.3.0` con `pydantic>=2.11` | `pydantic==2.10.6` |
+| 5 | `dbf8d68` | `TypeError: unhashable type: 'dict'` en jinja2 cache | bug de `jinja2>=3.1` + Gradio 4.44 + starlette combinado | `jinja2<3.1.0` (no funcionó probablemente por cache de HF / dependencia transitiva) |
+| 6 | `b823fca` | (mismo error arriba) | HF seguía con stack moderna → Gradio 4.44 incompatible | **migración a Gradio 5.6** + reescritura de `app.py` usando `gr.ChatInterface` (~70 líneas menos) |
+| 7 | `df7c504` | `ImportError: HfFolder` (de nuevo, ahora en Gradio 5.6 OAuth) | Gradio 5.6 oauth.py todavía importa HfFolder | `python_version: '3.11'` + `huggingface_hub<1.0` (defense in depth) |
+
+#### Lecciones técnicas aprendidas (CRÍTICAS para futuro)
+
+**1. En HF Spaces, pinear TODO desde el primer push. Combinación mínima recomendada:**
+```python
+# requirements.txt
+gradio>=5.6,<6.0
+huggingface_hub>=0.19.3,<1.0
+pydantic==2.10.6
+jinja2<3.1.0
+httpx>=0.27.0
+python-dotenv>=1.0.0
+```
+```yaml
+# README.md frontmatter
+sdk: gradio
+sdk_version: 5.6.0
+python_version: '3.11'
+```
+
+**2. Si vas a usar Gradio 4.44 o cercano, es una batalla perdida con HF moderno. Migrá a Gradio 5.6+ desde el inicio.**
+
+**3. `gr.ChatInterface` (Gradio 5+) es INMENSAMENTE más simple que `gr.Blocks` para chatbots.** Toda la complejidad de wire-up manual desaparece. Vale la pena reescribir desde cero, no portar.
+
+**4. Defensa en profundidad: pin Python + pin deps.** No confies en defaults de HF.
+
+**5. HF cachea deps y a veces ignora pines de requirements.txt.** Si un pin no funciona, hay que reiniciar el Space manualmente (Settings → Restart).
+
+#### Estado al cierre de sesión
+- Commits pusheados: 9 (saga completa documentada)
+- `memory.md` actualizado
+- Pendiente: confirmar que Gradio 5.6 + python 3.11 + HuggingFace hub<1.0 finalmente arranca
+- Si NO funciona: considerar Gradio 6.x, Streamlit, o ejecutar MVP-0 local sin HF Space
 
 ### 2026-07-01 — Deploy real a HF Space (RestaurantEAI)
 - **Nombre real del Space**: `RestaurantEAI` (decidido por David en HF web), NO `restauranteia-chef` como decía `DEPLOY_HF.md`. Actualizar el doc.
