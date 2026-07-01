@@ -497,8 +497,200 @@ def generar_ficha(peticion: str, skill_key: str = "ficha") -> str:
     return respuesta
 
 
+def _loop_ficha(skills: list[dict]) -> str | None:
+    """
+    Loop de la skill 'ficha': cada input genera una ficha y se queda ahí.
+    Devuelve la skill_key si el usuario cambia de skill, None si sale.
+    """
+    print("Escribí tu petición culinaria y presioná Enter.")
+    print("Comandos especiales:")
+    print("  /skill        — cambiar skill")
+    print("  /skills       — listar skills disponibles")
+    print("  salir         — terminar\n")
+
+    skill_key = "ficha"
+    while True:
+        try:
+            peticion = input("➤ ").strip()
+        except (EOFError, KeyboardInterrupt):
+            print("\n¡Hasta luego!")
+            return None
+
+        if not peticion:
+            continue
+        if peticion.lower() in ("salir", "exit", "quit"):
+            return None
+
+        # Comandos de cambio de skill
+        nueva = _manejar_comandos_skill(peticion, skill_key, skills)
+        if nueva is not None and nueva != skill_key:
+            return nueva  # cambia de skill
+        if nueva == skill_key:
+            continue  # comando procesado, misma skill, seguir
+
+        try:
+            ficha = generar_ficha(peticion, skill_key=skill_key)
+            print("\n" + ficha + "\n")
+            print("-" * 60 + "\n")
+        except Exception as e:
+            print(f"\n❌ Error: {e}\n", file=sys.stderr)
+
+
+def _loop_proceso_creativo(skills: list[dict], sesion_inicial=None) -> str | None:
+    """
+    Loop de la skill 'proceso_creativo': state machine con 7 fases.
+    Devuelve la skill_key si el usuario cambia de skill, None si sale.
+
+    Args:
+        skills: lista de skills disponibles (para comandos /skill).
+        sesion_inicial: si se pasa, se usa esa sesión en vez de crear una nueva.
+    """
+    from agents.creativo.proceso_creativo import listar_sesiones_activas
+    # _iniciar y procesar_mensaje_proceso viven en este mismo módulo (agent.py)
+    _iniciar = iniciar_proceso_creativo
+    _procesar = procesar_mensaje_proceso
+
+    sesion = sesion_inicial
+
+    print("🍂  PROCESO CREATIVO — state machine de 7 fases")
+    print()
+    print("Cada mensaje que escribas hace que el chef trabaje la fase actual.")
+    print("Las fases se guardan automáticamente. Podés cerrar y volver.")
+    print()
+    print("Comandos especiales:")
+    print("  /estado       — ver progreso de las 7 fases")
+    print("  /fase N       — saltar a fase N (1-7) o por nombre")
+    print("  /volver       — regenerar la fase actual")
+    print("  /ficha        — generar ficha final (auto cuando estén todas)")
+    print("  /ficha forzar — generar aunque falten fases")
+    print("  /reiniciar    — volver al inicio con la misma petición")
+    print("  /sesiones     — listar sesiones guardadas")
+    print("  /reanudar ID  — retomar una sesión anterior")
+    print("  /skill        — cambiar a otra skill")
+    print("  /skills       — listar skills disponibles")
+    print("  salir         — terminar")
+    print()
+
+    # Si nos pasaron una sesión inicial, mostramos su estado
+    if sesion is not None:
+        print(f"▶ Sesión activa: {sesion.sesion_id}")
+        print()
+        print(sesion.resumen_estado())
+        print()
+
+    while True:
+        try:
+            mensaje = input("➤ ").strip()
+        except (EOFError, KeyboardInterrupt):
+            if sesion is not None:
+                sesion.save()
+            print("\n¡Hasta luego!")
+            return None
+
+        if not mensaje:
+            continue
+        if mensaje.lower() in ("salir", "exit", "quit"):
+            if sesion is not None:
+                sesion.save()
+                print(f"\n👋 Sesión guardada: {sesion.sesion_id}")
+            return None
+
+        # Comandos de cambio de skill (mata la sesión actual)
+        nueva = _manejar_comandos_skill(mensaje, "proceso_creativo", skills)
+        if nueva is not None and nueva != "proceso_creativo":
+            if sesion is not None:
+                sesion.save()
+                print(f"\n(Sesión guardada: {sesion.sesion_id})")
+            return nueva
+        if nueva == "proceso_creativo":
+            continue
+
+        # Comandos especiales del proceso creativo
+        lower = mensaje.lower()
+
+        if lower == "/sesiones":
+            sesiones = listar_sesiones_activas()
+            if not sesiones:
+                print("\n  (no hay sesiones guardadas)\n")
+            else:
+                print("\n  Sesiones guardadas:")
+                for s in sesiones[:10]:
+                    estado = "✓" if s.get("completa") else "▶"
+                    print(f"    {estado} {s['sesion_id']}  —  {s['peticion'][:50]}")
+                print()
+            continue
+
+        if lower.startswith("/reanudar "):
+            sesion_id = mensaje[len("/reanudar "):].strip()
+            try:
+                sesion = _iniciar("", sesion_id=sesion_id)
+                print(f"\n↪️  Sesión reanudada: {sesion.sesion_id}\n")
+                print(sesion.resumen_estado())
+                print()
+            except FileNotFoundError as e:
+                print(f"\n❌ {e}\n")
+            continue
+
+        # Primer mensaje o mensaje normal: crear o usar sesión
+        if sesion is None:
+            sesion = _iniciar(mensaje)
+            print(f"\n🆕 Sesión: {sesion.sesion_id}")
+            print()
+            print(sesion.resumen_estado())
+            print()
+            print("Cuando me digas 'siguiente' (o cualquier cosa), trabajo la fase 1.")
+            print()
+            continue
+
+        try:
+            respuesta = _procesar(sesion, mensaje)
+            print()
+            print(respuesta)
+            print()
+            print("-" * 60)
+            print()
+        except Exception as e:
+            print(f"\n❌ Error: {e}\n", file=sys.stderr)
+
+
+def _manejar_comandos_skill(mensaje: str, skill_actual: str, skills: list[dict]) -> str | None:
+    """
+    Maneja comandos de cambio de skill (/skill, /skills) de forma transversal.
+    Devuelve:
+        - None: no era un comando de skill
+        - skill_actual: era un comando de skill pero la skill no cambió
+        - otra_key: era un comando de skill y el usuario eligió cambiar
+    """
+    lower = mensaje.lower()
+
+    if lower == "/skills":
+        print("\nSkills disponibles:")
+        for s in skills:
+            marker = " (actual)" if s["key"] == skill_actual else ""
+            print(f"  · {s['nombre']}{marker}  —  {s['descripcion']}")
+        print()
+        return skill_actual  # procesado, misma skill
+
+    if lower == "/skill":
+        print("\nCambiar skill:")
+        for i, s in enumerate(skills, 1):
+            marker = " (actual)" if s["key"] == skill_actual else ""
+            print(f"  {i}. {s['nombre']}{marker}")
+        while True:
+            r = input(f"   Elige 1-{len(skills)} > ").strip()
+            if r.isdigit() and 1 <= int(r) <= len(skills):
+                nueva_key = skills[int(r) - 1]["key"]
+                if nueva_key != skill_actual:
+                    nueva_nombre = next(s["nombre"] for s in skills if s["key"] == nueva_key)
+                    print(f"\n✓ Cambiando a: {nueva_nombre}\n")
+                return nueva_key
+            print(f"   (elegí un número entre 1 y {len(skills)})")
+
+    return None  # no era un comando de skill
+
+
 def modo_interactivo():
-    """Modo interactivo por línea de comandos."""
+    """Modo interactivo por línea de comandos. Selector de skill + dispatch."""
     # Bootstrap del contexto compartido del restaurante.
     # Si faltan los archivos, hace las preguntas automáticamente.
     from agents.knowledge_context import ensure_initialized, cargar_restaurante, cargar_catalogo
@@ -520,13 +712,12 @@ def modo_interactivo():
     print("\nElegí la skill con la que querés trabajar:")
     for i, s in enumerate(skills, 1):
         print(f"  {i}. {s['nombre']}  —  {s['descripcion']}")
-    print(f"  {len(skills) + 1}. Cambiar skill en cualquier momento (escribí /skill <key>)")
 
     skill_key = "ficha"
     while True:
         r = input(f"   Elige 1-{len(skills)} [{skill_key}] > ").strip()
         if not r:
-            break  # usa el default
+            break
         if r.isdigit() and 1 <= int(r) <= len(skills):
             skill_key = skills[int(r) - 1]["key"]
             break
@@ -535,56 +726,55 @@ def modo_interactivo():
     skill_actual = next(s for s in skills if s["key"] == skill_key)
     print(f"\n✓ Skill activa: {skill_actual['nombre']}\n")
 
-    print("Escribí tu petición culinaria y presioná Enter.")
-    print("Comandos especiales:")
-    print("  /skill        — cambiar skill")
-    print("  /skills       — listar skills disponibles")
-    print("  salir         — terminar\n")
-
+    # Dispatch al loop apropiado
     while True:
-        try:
-            peticion = input("➤ ").strip()
-        except (EOFError, KeyboardInterrupt):
-            print("\n¡Hasta luego!")
-            break
-
-        if not peticion:
-            continue
-        if peticion.lower() in ("salir", "exit", "quit"):
-            break
-
-        # Comandos slash
-        if peticion.lower() == "/skill":
-            print("\nCambiar skill:")
-            for i, s in enumerate(skills, 1):
-                marker = " (actual)" if s["key"] == skill_key else ""
-                print(f"  {i}. {s['nombre']}{marker}")
-            r = input(f"   Elige 1-{len(skills)} > ").strip()
-            if r.isdigit() and 1 <= int(r) <= len(skills):
-                skill_key = skills[int(r) - 1]["key"]
-                skill_actual = next(s for s in skills if s["key"] == skill_key)
-                print(f"\n✓ Skill activa: {skill_actual['nombre']}\n")
-            else:
-                print("   (opción inválida, sin cambios)\n")
-            continue
-        if peticion.lower() == "/skills":
-            print("\nSkills disponibles:")
-            for s in skills:
-                marker = " (actual)" if s["key"] == skill_key else ""
-                print(f"  · {s['nombre']}{marker}  —  {s['descripcion']}")
-            print()
-            continue
-
-        try:
-            ficha = generar_ficha(peticion, skill_key=skill_key)
-            print("\n" + ficha + "\n")
-            print("-" * 60 + "\n")
-        except Exception as e:
-            print(f"\n❌ Error: {e}\n", file=sys.stderr)
+        if skill_key == "proceso_creativo":
+            skill_key = _loop_proceso_creativo(skills)
+            if skill_key is None:
+                break
+        else:
+            skill_key = _loop_ficha(skills)
+            if skill_key is None:
+                break
+        # Si el usuario cambió skill, vuelve al inicio del while
+        nueva = next(s for s in skills if s["key"] == skill_key)
+        print(f"\n✓ Skill activa: {nueva['nombre']}\n")
 
 
 def main():
-    if len(sys.argv) > 1:
+    if len(sys.argv) > 1 and sys.argv[1] == "pc":
+        # Modo CLI directo para proceso creativo:
+        #   python -m agents.creativo.agent pc [--reanudar SESION_ID] [peticion]
+        args = sys.argv[2:]
+
+        reanudar_id = None
+        peticion = None
+        i = 0
+        while i < len(args):
+            if args[i] == "--reanudar" and i + 1 < len(args):
+                reanudar_id = args[i + 1]
+                i += 2
+            else:
+                peticion = " ".join(args[i:])
+                break
+
+        from agents.creativo.skills import list_skills
+
+        if reanudar_id:
+            sesion = iniciar_proceso_creativo("", sesion_id=reanudar_id)
+        elif peticion:
+            sesion = iniciar_proceso_creativo(peticion)
+        else:
+            sesion = None
+
+        if sesion is not None:
+            print(sesion.resumen_estado())
+            print()
+
+        # Loop interactivo enfocado solo en proceso creativo
+        skills = list_skills()
+        _loop_proceso_creativo(skills, sesion_inicial=sesion)
+    elif len(sys.argv) > 1:
         # Modo CLI: un solo argumento = una sola ficha
         peticion = " ".join(sys.argv[1:])
         ficha = generar_ficha(peticion)
