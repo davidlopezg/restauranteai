@@ -78,17 +78,6 @@ El diagrama de flujo completo del sistema (init phase, 3 skills, persistencia, d
 **Resumen del flujo en una línea**: Init phase (carga restaurante + carta) → Knowledge inyectado automáticamente en cada skill → 3 skills disponibles (ficha / proceso creativo / ideas creativas) → Detección de idioma con reintentos → Deploy a HF Space + backup en GitHub.
 
 
-**Lectura del diagrama**:
-
-1. **Init phase** (una sola vez): el agente te pregunta por el restaurante y el catálogo. El catálogo puede ser: pegar carta completa (LLM extrae) / manual / saltar.
-2. **Una vez con `.agent_knowledge/` poblado**, el chef **inyecta automáticamente** el restaurante + catálogo en cada llamada.
-3. **Tres skills disponibles** según lo que necesites.
-4. **El proceso creativo persiste** entre sesiones en `.agent_knowledge/sessions/`.
-5. **Detección de idioma** automática con reintentos si el chef responde en inglés.
-6. **Tres destinos**: HF Space (auto-rebuild al hacer push), local (CLI), GitHub (backup).
-
----
-
 ## Quick start (local)
 
 ### 1. Requisitos
