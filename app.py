@@ -45,6 +45,7 @@ from agents.creativo.agent import (
     call_minimax,
     iniciar_proceso_creativo,
     procesar_mensaje_proceso,
+    procesar_mensaje_ideas_creativas,
 )
 from agents.creativo.skills import (
     list_skills,
@@ -120,6 +121,12 @@ def responder(mensaje: str, historial: list, skill: str = "ficha") -> dict:
     # ────────────────────────────────────────────────────────────────────
     if skill == "proceso_creativo":
         return _responder_proceso_creativo(mensaje)
+
+    # ────────────────────────────────────────────────────────────────────
+    # Skill "ideas_creativas": exploración conversacional de 10 ideas
+    # ────────────────────────────────────────────────────────────────────
+    if skill == "ideas_creativas":
+        return _responder_ideas_creativas(mensaje)
 
     # ────────────────────────────────────────────────────────────────────
     # Skill "ficha" (default): flujo clásico
@@ -232,6 +239,31 @@ def _responder_proceso_creativo(mensaje: str) -> dict:
     except Exception as e:
         tipo = type(e).__name__
         logger.error(f"[{timestamp}] Error en proceso_creativo: {tipo}")
+        return {
+            "role": "assistant",
+            "content": f"❌ Error ({tipo}): {str(e)[:200]}"
+        }
+
+
+def _responder_ideas_creativas(mensaje: str) -> dict:
+    """
+    Handler de la skill 'ideas_creativas'.
+    Cada mensaje del usuario genera/refina ideas via LLM.
+    Comandos soportados (detectados dentro del mensaje):
+    - "más ideas" / "dame más" → 10 ideas nuevas
+    - "aplicá [método] a la idea N" → refina + variaciones
+    - "ficha de la idea N" → convierte a ficha técnica
+    - "ver métodos" → lista métodos disponibles
+    - cualquier otro → nueva petición de 10 ideas
+    """
+    timestamp = datetime.now().strftime("%H:%M:%S")
+    logger.info(f"[{timestamp}] Nueva petición (skill=ideas_creativas, len={len(mensaje)})")
+    try:
+        respuesta = procesar_mensaje_ideas_creativas(mensaje)
+        return {"role": "assistant", "content": respuesta}
+    except Exception as e:
+        tipo = type(e).__name__
+        logger.error(f"[{timestamp}] Error en ideas_creativas: {tipo}")
         return {
             "role": "assistant",
             "content": f"❌ Error ({tipo}): {str(e)[:200]}"

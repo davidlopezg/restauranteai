@@ -589,6 +589,291 @@ PROCESO_COMANDOS: set[str] = {
 }
 
 
+# ---------------------------------------------------------------------------
+# Skill "ideas_creativas" — exploración conversacional de 10 ideas
+# ---------------------------------------------------------------------------
+
+# Estado en memoria: las últimas 10 ideas generadas y los métodos aplicados.
+# Estructura:
+#   {
+#     "ultima_peticion": "...",
+#     "ideas": [
+#       {"n": 1, "nombre": "...", "tipo": "...", "por_que": "...", "semilla": "..."},
+#       ...
+#     ],
+#     "historial_iteraciones": [...],
+#   }
+from threading import Lock as _Lock
+_IDEAS_ESTADO: dict = {}
+_IDEAS_LOCK = _Lock()
+
+METODOS_CREATIVOS: list[str] = [
+    "autóctono", "influencias externas", "búsqueda técnico-conceptual",
+    "los sentidos", "el sexto sentido", "simbiosis dulce/salado",
+    "productos comerciales", "deconstrucción", "minimalismo",
+    "asociación", "inspiración", "adaptación", "sinergia",
+]
+
+
+def _parsear_idea_bloque(lineas: list[str]) -> dict | None:
+    """
+    Parsea un bloque de idea del output del LLM. Formato esperado:
+        **N. [Nombre]**
+        *Tipo:* ...
+        *Por qué encaja:* ...
+        *Semilla:* ...
+    Devuelve dict con los campos o None si no se puede parsear.
+    """
+    if not lineas:
+        return None
+    import re
+    primera = lineas[0].strip()
+    # Buscar **N. Nombre**
+    m = re.match(r'\*\*(\d+)\.\s+(.+?)\*\*', primera)
+    if not m:
+        return None
+    n = int(m.group(1))
+    nombre = m.group(2).strip()
+    campos = {"n": n, "nombre": nombre, "tipo": "", "por_que": "", "semilla": ""}
+    for linea in lineas[1:]:
+        l = linea.strip()
+        if l.startswith("*Tipo:*"):
+            campos["tipo"] = l.replace("*Tipo:*", "").strip()
+        elif l.startswith("*Por qu"):
+            campos["por_que"] = l.split(":", 1)[1].strip()
+        elif l.startswith("*Semilla:*"):
+            campos["semilla"] = l.replace("*Semilla:*", "").strip()
+    return campos
+
+
+def _parsear_ideas_de_respuesta(respuesta: str) -> list[dict]:
+    """
+    Extrae todas las ideas numeradas de la respuesta del LLM.
+    Cada bloque de idea empieza con **N. Nombre** y termina antes del próximo bloque o separador.
+    """
+    lineas = respuesta.split('\n')
+    ideas: list[dict] = []
+    bloque_actual: list[str] = []
+    in_bloque = False
+
+    import re
+    for linea in lineas:
+        if re.match(r'\*\*\d+\.', linea.strip()):
+            # Nuevo bloque: guardar el anterior si existía
+            if in_bloque and bloque_actual:
+                idea = _parsear_idea_bloque(bloque_actual)
+                if idea:
+                    ideas.append(idea)
+            bloque_actual = [linea]
+            in_bloque = True
+        elif in_bloque:
+            # Si es separador (---) o línea vacía, terminamos el bloque
+            if linea.strip().startswith('---') or (
+                linea.strip() == '' and len(bloque_actual) > 1
+            ):
+                idea = _parsear_idea_bloque(bloque_actual)
+                if idea:
+                    ideas.append(idea)
+                bloque_actual = []
+                in_bloque = False
+            else:
+                bloque_actual.append(linea)
+    # Última idea si quedó abierta
+    if in_bloque and bloque_actual:
+        idea = _parsear_idea_bloque(bloque_actual)
+        if idea:
+            ideas.append(idea)
+    return ideas
+
+
+def _generar_ideas_llm(peticion: str, ideas_previas: list[dict] | None = None) -> tuple[str, list[dict]]:
+    """
+    Pide al LLM 10 ideas creativas. Devuelve (respuesta_cruda, ideas_parseadas).
+    Si ideas_previas está presente, le pide al LLM 10 ideas NUEVAS distintas.
+    """
+    system_prompt = load_skill_prompt("ideas_creativas")
+    # Inyectar contexto del restaurante y catálogo
+    restaurante_str = formatear_restaurante_para_chef(load_restaurante())
+    catalogo_str = formatear_catalogo_para_chef(load_catalogo())
+    if restaurante_str:
+        system_prompt = system_prompt + restaurante_str
+    if catalogo_str:
+        system_prompt = system_prompt + catalogo_str
+
+    if ideas_previas:
+        # Pedir 10 nuevas evitando repetir las anteriores
+        nombres_previos = ", ".join(i["nombre"] for i in ideas_previas[:10])
+        user_msg = (
+            f"{peticion}\n\n"
+            f"IMPORTANTE: ya generaste estas 10 ideas antes, NO las repitas: {nombres_previos}. "
+            f"Generá 10 ideas COMPLETAMENTE NUEVAS y distintas."
+        )
+    else:
+        user_msg = peticion
+
+    # Reforzar instrucción de idioma
+    user_msg = user_msg + (
+        "\n\n---\n\n"
+        "⚠️ RECORDATORIO: Respondé SOLO en castellano. Sin caracteres cirílicos, hanzi, etc."
+    )
+
+    respuesta = call_minimax(system_prompt, user_msg)
+    ideas = _parsear_ideas_de_respuesta(respuesta)
+    return respuesta, ideas
+
+
+def _aplicar_metodo_a_idea(idea: dict, metodo: str, peticion_original: str) -> str:
+    """
+    Pide al LLM que aplique un método creativo a una idea específica.
+    Devuelve la respuesta del LLM (ya formateada con refinamiento + variaciones).
+    """
+    system_prompt = load_skill_prompt("ideas_creativas")
+    restaurante_str = formatear_restaurante_para_chef(load_restaurante())
+    catalogo_str = formatear_catalogo_para_chef(load_catalogo())
+    if restaurante_str:
+        system_prompt = system_prompt + restaurante_str
+    if catalogo_str:
+        system_prompt = system_prompt + catalogo_str
+
+    user_msg = (
+        f"El usuario quiere aplicar el método creativo '{metodo}' a esta idea:\n\n"
+        f"**Idea {idea['n']}: {idea['nombre']}**\n"
+        f"Tipo: {idea['tipo']}\n"
+        f"Por qué encaja: {idea['por_que']}\n"
+        f"Semilla: {idea['semilla']}\n\n"
+        f"Recordá el contexto original del usuario: {peticion_original}\n\n"
+        f"Devolvé:\n"
+        f"1. La idea REFINADA con el método '{metodo}' aplicado (1-2 frases explicando cómo cambió)\n"
+        f"2. 3-5 VARIACIONES derivadas de aplicar el método\n"
+        f"3. Una mini-sección 'Por qué este método funciona acá' (1 frase)\n\n"
+        f"Formato: castelano, sin markdown extravagante, conciso."
+    )
+
+    user_msg = user_msg + (
+        "\n\n⚠️ RECORDATORIO: Respondé SOLO en castellano. Sin caracteres cirílicos, hanzi, etc."
+    )
+    return call_minimax(system_prompt, user_msg)
+
+
+def _convertir_idea_a_ficha(idea: dict, peticion_original: str) -> str:
+    """
+    Convierte una idea en ficha técnica completa, usando la skill 'ficha' como base.
+    """
+    ficha_system = load_skill_prompt("ficha")
+    restaurante_str = formatear_restaurante_para_chef(load_restaurante())
+    catalogo_str = formatear_catalogo_para_chef(load_catalogo())
+    if restaurante_str:
+        ficha_system = ficha_system + restaurante_str
+    if catalogo_str:
+        ficha_system = ficha_system + catalogo_str
+
+    user_msg = (
+        f"Convertí esta idea creativa del usuario en una FICHA TÉCNICA completa:\n\n"
+        f"**Idea {idea['n']}: {idea['nombre']}**\n"
+        f"Tipo: {idea['tipo']}\n"
+        f"Por qué encaja: {idea['por_que']}\n"
+        f"Semilla: {idea['semilla']}\n\n"
+        f"Contexto original del usuario: {peticion_original}\n\n"
+        f"Devolvé la ficha con la estructura estándar: nombre, historia, ficha técnica "
+        f"(ingredientes para 4 raciones + elaboración), maridaje, prompt de imagen en inglés."
+    )
+
+    user_msg = user_msg + (
+        "\n\n⚠️ RECORDATORIO: Respondé SOLO en castellano. El único campo en inglés es el PROMPT PARA IMAGEN."
+    )
+    return call_minimax(ficha_system, user_msg)
+
+
+def _ver_metodos() -> str:
+    """Devuelve un listado de los métodos creativos disponibles."""
+    lineas = ["💡 MÉTODOS CREATIVOS DISPONIBLES (de ElBulli + propios):\n"]
+    for i, m in enumerate(METODOS_CREATIVOS, 1):
+        lineas.append(f"  {i}. {m}")
+    lineas.append("\n")
+    lineas.append("Usá: 'aplicá [método] a la idea N'")
+    lineas.append("Ejemplo: 'aplicá deconstrucción a la idea 3'")
+    return "\n".join(lineas)
+
+
+def procesar_mensaje_ideas_creativas(mensaje: str) -> str:
+    """
+    Handler principal de la skill 'ideas_creativas'.
+    Detecta comandos y dispatcha al flujo apropiado.
+
+    Comandos:
+    - "más ideas" / "dame más" → 10 ideas nuevas
+    - "aplicá [método] a la idea N" → refina + variaciones
+    - "ficha de la idea N" → convierte a ficha técnica
+    - "ver métodos" → lista métodos disponibles
+    - cualquier otro mensaje → nueva petición de 10 ideas
+    """
+    global _IDEAS_ESTADO
+    mensaje = (mensaje or "").strip()
+    if not mensaje:
+        return ""
+
+    lower = mensaje.lower()
+
+    # Comando: ver métodos
+    if lower in ("ver métodos", "ver metodos", "métodos", "metodos"):
+        return _ver_metodos()
+
+    # Comando: más ideas
+    if lower in ("más ideas", "mas ideas", "dame más", "dame mas", "dame 10 más", "dame otras 10"):
+        with _IDEAS_LOCK:
+            ideas_previas = _IDEAS_ESTADO.get("ideas", [])
+            peticion = _IDEAS_ESTADO.get("ultima_peticion", "ideas creativas")
+        if not ideas_previas:
+            return "Todavía no generamos ideas. Decime qué tipo de ideas querés (ej: 'ideas para otoño')."
+        respuesta, ideas = _generar_ideas_llm(peticion, ideas_previas=ideas_previas)
+        with _IDEAS_LOCK:
+            _IDEAS_ESTADO["ideas"] = ideas
+        return respuesta
+
+    # Comando: aplicar método a idea N
+    # Formatos aceptados: "aplicá X a la idea 3", "aplicar X a la 3", "X a la idea 3"
+    import re
+    m = re.match(r'(?:aplic[áa]r?\s+)?(.+?)\s+(?:a\s+)?(?:la\s+)?(?:idea\s+)?(\d+)', lower)
+    if m and any(pal in lower for pal in ("aplic", "a la idea", "a la ")):
+        metodo = m.group(1).strip()
+        n = int(m.group(2))
+        with _IDEAS_LOCK:
+            ideas = _IDEAS_ESTADO.get("ideas", [])
+            peticion = _IDEAS_ESTADO.get("ultima_peticion", "")
+        idea = next((i for i in ideas if i["n"] == n), None)
+        if not idea:
+            return f"❌ No tengo la idea {n}. Las ideas disponibles son: {', '.join(str(i['n']) for i in ideas) if ideas else '(ninguna)'}."
+        try:
+            return _aplicar_metodo_a_idea(idea, metodo, peticion)
+        except Exception as e:
+            return f"❌ Error aplicando método: {e}"
+
+    # Comando: ficha de la idea N
+    m = re.match(r'ficha\s+(?:de\s+)?(?:la\s+)?(?:idea\s+)?(\d+)', lower)
+    if m:
+        n = int(m.group(1))
+        with _IDEAS_LOCK:
+            ideas = _IDEAS_ESTADO.get("ideas", [])
+            peticion = _IDEAS_ESTADO.get("ultima_peticion", "")
+        idea = next((i for i in ideas if i["n"] == n), None)
+        if not idea:
+            return f"❌ No tengo la idea {n}."
+        try:
+            return _convertir_idea_a_ficha(idea, peticion)
+        except Exception as e:
+            return f"❌ Error generando ficha: {e}"
+
+    # Mensaje por defecto: nueva petición de 10 ideas
+    try:
+        respuesta, ideas = _generar_ideas_llm(mensaje, ideas_previas=None)
+        with _IDEAS_LOCK:
+            _IDEAS_ESTADO["ultima_peticion"] = mensaje
+            _IDEAS_ESTADO["ideas"] = ideas
+        return respuesta
+    except Exception as e:
+        return f"❌ Error generando ideas: {e}"
+
+
 def iniciar_proceso_creativo(peticion: str, sesion_id: str | None = None):
     """
     Inicia (o reanuda) una sesión del proceso creativo.
@@ -940,6 +1225,54 @@ def _loop_proceso_creativo(skills: list[dict], sesion_inicial=None) -> str | Non
             print(f"\n❌ Error: {e}\n", file=sys.stderr)
 
 
+def _loop_ideas_creativas(skills: list[dict]) -> str | None:
+    """
+    Loop de la skill 'ideas_creativas': exploración conversacional de 10 ideas.
+    Comandos: más ideas, aplicá [método] a la idea N, ficha de la idea N, ver métodos.
+    Devuelve la skill_key si cambia, None si sale.
+    """
+    print("💡  IDEAS CREATIVAS — exploración de 10 ideas")
+    print()
+    print("Decime qué tipo de ideas querés (ej: 'ideas para otoño').")
+    print("Después podés iterar con:")
+    print("  más ideas                          — 10 ideas nuevas")
+    print("  aplicá [método] a la idea N       — refina con un método creativo")
+    print("  ficha de la idea N                — convierte en ficha técnica")
+    print("  ver métodos                       — lista de métodos disponibles")
+    print("  /skill                            — cambiar a otra skill")
+    print("  salir                             — terminar")
+    print()
+
+    while True:
+        try:
+            mensaje = input("➤ ").strip()
+        except (EOFError, KeyboardInterrupt):
+            print("\n¡Hasta luego!")
+            return None
+
+        if not mensaje:
+            continue
+        if mensaje.lower() in ("salir", "exit", "quit"):
+            return None
+
+        # Comandos de cambio de skill
+        nueva = _manejar_comandos_skill(mensaje, "ideas_creativas", skills)
+        if nueva is not None and nueva != "ideas_creativas":
+            return nueva
+        if nueva == "ideas_creativas":
+            continue
+
+        try:
+            respuesta = procesar_mensaje_ideas_creativas(mensaje)
+            print()
+            print(respuesta)
+            print()
+            print("-" * 60)
+            print()
+        except Exception as e:
+            print(f"\n❌ Error: {e}\n", file=sys.stderr)
+
+
 def _manejar_comandos_skill(mensaje: str, skill_actual: str, skills: list[dict]) -> str | None:
     """
     Maneja comandos de cambio de skill (/skill, /skills) de forma transversal.
@@ -1019,6 +1352,10 @@ def modo_interactivo():
             skill_key = _loop_proceso_creativo(skills)
             if skill_key is None:
                 break
+        elif skill_key == "ideas_creativas":
+            skill_key = _loop_ideas_creativas(skills)
+            if skill_key is None:
+                break
         else:
             skill_key = _loop_ficha(skills)
             if skill_key is None:
@@ -1029,6 +1366,29 @@ def modo_interactivo():
 
 
 def main():
+    if len(sys.argv) > 1 and sys.argv[1] == "ideas":
+        # Modo CLI directo para ideas creativas:
+        #   python -m agents.creativo.agent ideas [peticion]
+        from agents.creativo.skills import list_skills
+        from agents.creativo.agent import procesar_mensaje_ideas_creativas as _proc_ideas
+        skills = list_skills()
+        # Bucle simple: imprime respuesta, lee siguiente mensaje, repite
+        peticion_inicial = " ".join(sys.argv[2:]).strip() if len(sys.argv) > 2 else None
+        if peticion_inicial:
+            print(_proc_ideas(peticion_inicial))
+        while True:
+            try:
+                msg = input("➤ ").strip()
+            except (EOFError, KeyboardInterrupt):
+                print("\n¡Hasta luego!")
+                break
+            if not msg:
+                continue
+            if msg.lower() in ("salir", "exit", "quit"):
+                break
+            print(_proc_ideas(msg))
+        return
+
     if len(sys.argv) > 1 and sys.argv[1] == "pc":
         # Modo CLI directo para proceso creativo:
         #   python -m agents.creativo.agent pc [--reanudar SESION_ID] [peticion]

@@ -51,6 +51,19 @@ SKILLS: list[dict] = [
             "Pizza contemporánea con masa de fermentación larga y toppings de temporada",
         ],
     },
+    {
+        "key": "ideas_creativas",
+        "nombre": "Ideas creativas",
+        "descripcion": "Genera 10 ideas creativas que encajen con tu restaurante (ticket, línea, carta actual). Después podés aplicar métodos creativos de ElBulli para refinar, o convertir una idea en ficha.",
+        "prompt_path": PROMPTS_DIR / "system_ideas_creativas.md",
+        "ejemplos": [
+            "Ideas para menú de otoño",
+            "Ideas para renovar la sección de postres",
+            "Ideas para un hueco de la carta (postres con chocolate)",
+            "Ideas de temporada con producto local",
+            "Ideas de pizzas contemporáneas para la carta de primavera",
+        ],
+    },
 ]
 
 
