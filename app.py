@@ -128,13 +128,12 @@ footer {visibility: hidden}
 """
 
 
-# Gradio 6.19+ cambió la API de ChatInterface:
-#   - 'theme' y 'css' NO se pasan al ChatInterface, van al gr.Blocks contenedor.
-#   - 'type' ya no es kwarg del ChatInterface; se setea via el chatbot custom.
-with gr.Blocks(
-    theme=gr.themes.Soft(primary_hue="orange"),
-    css=CUSTOM_CSS,
-) as demo:
+# Gradio 6.19+ cambió varias cosas:
+#   - 'theme' y 'css' NO van al gr.Blocks() constructor, van al .launch()
+#   - ChatInterface no acepta 'type' (ya no existe como kwarg)
+#   - Chatbot no acepta 'type' (en 6 es default 'messages' automático)
+#   - Mi responder() ya devuelve dict {role, content}, así que messages es el default natural
+with gr.Blocks() as demo:
     gr.ChatInterface(
         fn=responder,
         title="🍂 Chef Creativo — RestaurantEAI",
@@ -145,7 +144,6 @@ with gr.Blocks(
         ),
         examples=PROMPT_EJEMPLOS,
         chatbot=gr.Chatbot(
-            type="messages",
             avatar_images=(None, "🍂"),
         ),
     )
