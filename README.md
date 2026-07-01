@@ -41,6 +41,8 @@ short_description: "Chef IA: fichas y proceso creativo"
 7. [Repos y remotes](#repos-y-remotes)
 8. [Roadmap](#roadmap)
 
+> 📖 **¿Buscás un comando específico?** Mirá [`docs/COMMANDS.md`](docs/COMMANDS.md) — índice completo de entry points, comandos in-session, scripts, y paths importantes.
+
 ---
 
 ## Estado del proyecto
