@@ -140,6 +140,7 @@ demo = gr.ChatInterface(
     css=CUSTOM_CSS,
     chatbot=gr.Chatbot(
         label="Conversación",
+        type="messages",  # Gradio 5+ requiere esto para mostrar respuestas (default 'tuples' está deprecated)
         avatar_images=(None, "🍂"),
     ),
 )
