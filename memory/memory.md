@@ -337,3 +337,33 @@ python_version: '3.11'
 **Pendiente:**
 - Si el Space HF implementa UI para invocar `/proceso_creativo` desde el chat → considerar agregar CTA en la landing que distinga "modo directo" de "modo proceso creativo".
 - Subir landing a producción (push a `origin`) — es lo que dispara GitHub Pages.
+
+### 2026-07-02 — SDD iniciado: change `archivo-de-ideas` (Fase 2 destrabada)
+
+**Contexto:** David propuso un feature de producto claro: una DB local tipo SQL donde el agente vaya guardando ideas que el usuario menciona, con **consentimiento humano explícito como invariante** ("el agente no puede guardar nada sin el consentimiento humano"). Lo llamó "archivo de ideas".
+
+**Por qué SDD y no implementación directa:**
+- Cruza agente + UX + RGPD + tests + landing → multi-area, alto review burden.
+- Decisiones de fondo pendientes (storage, consentimiento, schema) que conviene fijar en spec antes de codear.
+- Es la pieza que destraba el roadmap Fase 2 (Agente Memoria) bloqueado desde 2026-06-30.
+
+**Decisiones tomadas (preflight del orquestador):**
+- `executionMode`: interactive (David debe poder pausar entre fases)
+- `artifactStore`: openspec (Engram no está instalado)
+- `chainedPRStrategy`: ask-always
+- `reviewBudget`: 400
+
+**Archivos creados en esta sesión:**
+- `openspec/config.yaml` — config del proyecto + preflight
+- `openspec/changes/archivo-de-ideas/proposal.md` — esqueleto del proposal con decisiones tentativas y preguntas abiertas
+
+**Pendiente:**
+- Sesión 1: `sdd-explore` (mapear codebase + validar heurísticas) → `sdd-proposal` (ajustar este proposal para aprobación).
+- Sesión 2: `sdd-spec` + `sdd-design`.
+- Sesión 3: `sdd-tasks` + `sdd-apply` + `sdd-verify`.
+- Sesión 4: `sdd-sync` + `sdd-archive` + actualizar landing.
+- NO commitear `.agent_knowledge/ideas.db` (ya está cubierto por el `.gitignore` general de `.agent_knowledge/`).
+
+**Notas operativas:**
+- NO pushear a `hf` los cambios de `openspec/` — son docs/dev, no afectan al Space.
+- Push solo a `origin` (GitHub).

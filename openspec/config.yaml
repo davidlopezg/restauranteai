@@ -1,0 +1,82 @@
+# OpenSpec — configuración del proyecto `restauranteia`
+
+> Configuración inicial del proyecto para el flujo SDD (Spec-Driven Development).
+> Creado: 2026-07-02.
+
+# ─── Proyecto ──────────────────────────────────────────────────────────────
+
+project:
+  name: restauranteia
+  description: >
+    Ecosistema de agentes IA para hostelería. MVP-0.5 desplegado en Hugging Face
+    Spaces (Chef Creativo). MVP-1 (landing page) en GitHub Pages. Próxima fase:
+    Agente Memoria / Archivo de Ideas.
+  owner: davidlopezg
+
+# ─── Preflight del orquestador (sesión actual) ─────────────────────────────
+
+# Decisiones tomadas con David al arrancar SDD en este proyecto.
+
+preflight:
+  # 1. Modo de ejecución: pausar entre fases y pedir confirmación
+  executionMode: interactive
+
+  # 2. Dónde viven los artifacts SDD: solo en archivos del repo
+  #    (Engram no está instalado en este proyecto)
+  artifactStore: openspec
+
+  # 3. Estrategia de PR: preguntar antes de decidir single/chained
+  chainedPRStrategy: ask-always
+
+  # 4. Budget de review: changed lines antes de sugerir chained
+  reviewBudget: 400
+
+# ─── Reglas del proyecto ────────────────────────────────────────────────────
+
+rules:
+  # El proyecto usa TDD estricto en apply/verify (recomendado, no obligatorio).
+  strictTDD: false
+
+  # Idioma de los artifacts: español (alineado con el dominio del usuario).
+  artifactLanguage: es
+
+  # Idioma de las conversaciones con el usuario: español rioplatense (voseo).
+  userLanguage: es-AR
+
+  # Idioma de los prompts a subagents: inglés (ahorra tokens, el subagent
+  # no necesita producir texto en español).
+  subagentLanguage: en
+
+# ─── Paths canónicos ───────────────────────────────────────────────────────
+
+paths:
+  changesDir: openspec/changes
+  archiveDir: openspec/changes/archive
+  specsDir: openspec/specs
+  templatesDir: openspec/templates
+
+# ─── Fases SDD habilitadas ─────────────────────────────────────────────────
+
+# Fases del flujo canónico:
+#   init → explore → proposal → spec → design → tasks → apply → verify → sync → archive
+#
+# En este proyecto dejamos todas habilitadas; el phase agent decide cuándo
+# saltar o ejecutar cada una según el cambio.
+
+phases:
+  explore: enabled
+  proposal: enabled
+  spec: enabled
+  design: enabled
+  tasks: enabled
+  apply: enabled
+  verify: enabled
+  sync: enabled
+  archive: enabled
+
+# ─── Estado actual ─────────────────────────────────────────────────────────
+
+# Change activo (en curso): ninguno todavía.
+# Se actualiza cuando se inicia un change nuevo.
+
+activeChange: null
