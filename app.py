@@ -90,6 +90,17 @@ def responder(mensaje: str, historial: list) -> dict:
             )
 
         user_message = mensaje + contexto_adicional
+
+        # 🚨 RECORDATORIO FINAL DE IDIOMA — posicionalmente es lo que más autoridad tiene.
+        instruccion_idioma = (
+            "\n\n---\n\n"
+            "⚠️ RECORDATORIO FINAL ⚠️\n"
+            "Responde SOLO en espa\u00f1ol (castellano). El \u00fanico campo que admite ingl\u00e9s "
+            "es el \"\ud83c\udfa8 PROMPT PARA IMAGEN DEL PLATO\" al final. "
+            "Prohibido: ingl\u00e9s, franc\u00e9s, cir\u00edlico, hanzi, kanji. Solo alfabeto latino."
+        )
+        user_message = user_message + instruccion_idioma
+
         respuesta = call_minimax(SYSTEM_PROMPT, user_message)
         return {"role": "assistant", "content": respuesta}
 

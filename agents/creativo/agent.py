@@ -205,6 +205,25 @@ def generar_ficha(peticion: str) -> str:
         )
     
     user_message = peticion + contexto_adicional
+
+    # 🚨 INSTRUCCIÓN DE IDIOMA AL FINAL DEL MENSAJE — máxima autoridad posicional.
+    # Si la regla del system prompt no basta, esta actúa como recordatorio ineludible.
+    # El chef NO DEBE derivar al inglés. Solo el "Prompt para imagen" va en inglés.
+    instruccion_idioma = (
+        "\n\n---\n\n"
+        "⚠️ RECORDATORIO FINAL — INSTRUCCIÓN DE IDIOMA OBLIGATORIA ⚠️\n\n"
+        "Responde a esta petici\u00f3n escrita en espa\u00f1ol **\u00fanica y exclusivamente en espa\u00f1ol** (castellano). "
+        "**PROHIBIDO** responder en ingl\u00e9s, franc\u00e9s u otro idioma en ninguna parte "
+        "del cuerpo de la ficha. La \u00fanica secci\u00f3n que admite ingl\u00e9s es el campo "
+        "\"\ud83c\udfa8 PROMPT PARA IMAGEN DEL PLATO\" al final (por convenci\u00f3n universal para "
+        "generadores de im\u00e1genes como DALL-E / Midjourney / Stable Diffusion).\n\n"
+        "Si tu respuesta contiene t\u00e9rminos en ingl\u00e9s fuera de ese campo, ES UN ERROR. "
+        "Re-escribe la ficha completa en espa\u00f1ol antes de devolverla.\n\n"
+        "PROHIBIDO tambi\u00e9n: caracteres cir\u00edlicos (rusos), hanzi (chinos), hangul (coreanos), "
+        "kanji (japoneses). Solo alfabeto latino."
+    )
+
+    user_message = user_message + instruccion_idioma
     
     print(f"🍳 Generando ficha para: \"{peticion}\"...\n", file=sys.stderr)
     respuesta = call_minimax(system_prompt, user_message)
