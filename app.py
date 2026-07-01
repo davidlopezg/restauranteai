@@ -160,4 +160,6 @@ if __name__ == "__main__":
         server_name="0.0.0.0",
         server_port=7860,
         show_error=True,
+        theme=gr.themes.Soft(primary_hue="orange"),
+        css=CUSTOM_CSS,
     )
