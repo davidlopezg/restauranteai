@@ -9,7 +9,7 @@ python_version: '3.11'
 app_file: app.py
 pinned: false
 license: mit
-short_description: Generador de fichas creativas de platos con IA + proceso creativo por fases
+short_description: Chef IA: fichas y proceso creativo
 ---
 
 # 🍂 Chef Creativo — RestaurantEAI
