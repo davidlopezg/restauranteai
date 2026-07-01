@@ -38,7 +38,9 @@ from agents.creativo.agent import (
     load_skill_prompt,
     load_estacionalidad,
     load_catalogo,
+    load_restaurante,
     formatear_catalogo_para_chef,
+    formatear_restaurante_para_chef,
     check_estacionalidad,
     call_minimax,
     iniciar_proceso_creativo,
@@ -123,6 +125,11 @@ def responder(mensaje: str, historial: list, skill: str = "ficha") -> dict:
     # Skill "ficha" (default): flujo clásico
     # ────────────────────────────────────────────────────────────────────
     system_prompt = _get_skill_prompt(skill)
+    # Inyectar el contexto del restaurante (ticket, sofisticación, línea, etc.)
+    restaurante = load_restaurante()
+    restaurante_str = formatear_restaurante_para_chef(restaurante)
+    if restaurante_str:
+        system_prompt = system_prompt + restaurante_str
     # Inyectar el catálogo de platos como contexto (si existe)
     catalogo = load_catalogo()
     catalogo_str = formatear_catalogo_para_chef(catalogo)

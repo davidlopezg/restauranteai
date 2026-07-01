@@ -120,6 +120,207 @@ def load_catalogo() -> list[dict]:
         return []
 
 
+def load_restaurante() -> dict:
+    """Carga el contexto del restaurante (de la fase init).
+
+    Devuelve dict vacío si no existe.
+    """
+    from agents.knowledge_context import cargar_restaurante
+    try:
+        return cargar_restaurante()
+    except FileNotFoundError:
+        return {}
+
+
+def formatear_restaurante_para_chef(restaurante: dict | None = None) -> str:
+    """
+    Formatea el contexto del restaurante para inyectarlo como contexto al chef.
+
+    Args:
+        restaurante: dict con los datos del restaurante. Si None, se carga del disco.
+
+    Returns:
+        String formateado, o string vacío si no hay datos.
+    """
+    if restaurante is None:
+        restaurante = load_restaurante()
+
+    if not restaurante:
+        return ""
+
+    # Mapeos de valores enum a descripciones legibles
+    SOFISTICACION = {
+        "muy_alta": "muy sofisticada (cocina de autor, alta gastronomía)",
+        "alta": "alta (cocina refinada con producto destacado)",
+        "media": "media (cocina cuidada pero accesible)",
+        "baja": "baja (cocina honesta, producto noble sin alarde)",
+        "muy_baja": "muy baja (cocina popular, producto básico bien tratado)",
+    }
+    GRUPOS = {
+        "sin_grupos": "no recibís grupos",
+        "con_grupos_pequenos": "recibís grupos pequeños",
+        "con_grupos_grandes": "recibís grupos grandes",
+        "banquetes_eventos": "banquetes y eventos son parte del negocio",
+    }
+    LOCALIZACION = {
+        "urbana": "ubicación urbana",
+        "rural": "ubicación rural",
+        "litoral_mar": "cerca del mar",
+        "montana": "en zona de montaña",
+        "singular_edificio_historico": "en edificio singular o histórico",
+    }
+    TIEMPO = {
+        "comida_rapida": "comida rápida (cliente sale en ~20 min)",
+        "medio": "tiempo medio (cliente ~1h en mesa)",
+        "slow_food": "slow food (cliente 2-3h, experiencia larga)",
+    }
+    ORIGEN = {
+        "local_pueblo": "inspiración local / del pueblo",
+        "regional_provincia": "inspiración regional / de la provincia",
+        "nacional_pais": "inspiración nacional",
+        "mediterraneo": "inspiración mediterránea",
+        "latinoamericano": "inspiración latinoamericana",
+        "asiatico": "inspiración asiática",
+        "norte_europeo": "inspiración norte-europea",
+        "frances_gourmet": "gastronomía francesa / gourmet",
+        "internacional_fusion": "fusión internacional",
+    }
+    EPOCA = {
+        "medieval": "medieval",
+        "clasica_francesa": "clásica francesa",
+        "tradicional_popular": "tradicional / popular",
+        "rustica_pais": "rústica / de payés",
+        "mediterranea_moderna": "mediterránea moderna",
+        "nouvelle_cuisine": "nouvelle cuisine",
+        "autor_contemporanea": "de autor / contemporánea",
+        "street_food_gourmet": "street food gourmet",
+        "casual_actual": "casual actual",
+        "pizzeria_tradicional_italiana": "pizzería tradicional italiana",
+        "pizzeria_contemporanea": "pizzería contemporánea",
+        "casual_mediterraneo": "casual mediterráneo",
+    }
+
+    def fmt_lista(key: str, mapping: dict | None = None) -> str:
+        """Formatea una lista de valores del restaurante."""
+        vals = restaurante.get(key, [])
+        if not vals:
+            return ""
+        if isinstance(vals, str):
+            vals = [vals]
+        if mapping:
+            return ", ".join(mapping.get(v, v) for v in vals if v)
+        return ", ".join(str(v) for v in vals if v)
+
+    lineas = [
+        "\n\n---\n",
+        "## CONTEXTO DEL RESTAURANTE",
+        "",
+        "Estos son los datos del restaurante que el chef debe respetar SIEMPRE "
+        "al generar fichas. NO propongas nada que contradiga estas decisiones.",
+        "",
+    ]
+
+    # Nombre (si está)
+    nombre = restaurante.get("nombre", "").strip()
+    if nombre:
+        lineas.append(f"**Restaurante**: {nombre}")
+        lineas.append("")
+
+    # Ticket medio
+    pmin = restaurante.get("precio_target_min")
+    pmax = restaurante.get("precio_target_max")
+    pmoda = restaurante.get("precio_target_moda")
+    if any(v is not None for v in (pmin, pmax, pmoda)):
+        partes = []
+        if pmin is not None:
+            partes.append(f"mín {pmin}€")
+        if pmax is not None:
+            partes.append(f"máx {pmax}€")
+        if pmoda is not None:
+            partes.append(f"típico {pmoda}€")
+        if partes:
+            lineas.append(f"**Ticket medio por persona**: {', '.join(partes)}")
+            lineas.append("")
+
+    # Sofisticación
+    sof = restaurante.get("sofisticacion", "").strip()
+    if sof:
+        lineas.append(f"**Sofisticación**: {SOFISTICACION.get(sof, sof)}")
+        lineas.append("")
+
+    # Productos dominantes
+    prods = fmt_lista("productos_dominantes")
+    if prods:
+        lineas.append(f"**Productos que mandan en la cocina**: {prods}")
+        lineas.append("")
+
+    # Técnicas dominantes
+    tecs = fmt_lista("tecnicas_dominantes")
+    if tecs:
+        lineas.append(f"**Técnicas / elaboraciones dominantes**: {tecs}")
+        lineas.append("")
+
+    # Tipo de servicio
+    serv = fmt_lista("tipo_servicio")
+    if serv:
+        lineas.append(f"**Tipo de servicio**: {serv}")
+        lineas.append("")
+
+    # Grupos
+    grp = restaurante.get("grupos", "").strip()
+    if grp:
+        lineas.append(f"**Política de grupos**: {GRUPOS.get(grp, grp)}")
+        lineas.append("")
+
+    # Clases de comensales
+    cls = fmt_lista("clases_comedores")
+    if cls:
+        lineas.append(f"**Tipo de cliente objetivo**: {cls}")
+        lineas.append("")
+
+    # Origen / inspiración
+    orig = restaurante.get("origen_inspiracion", "").strip()
+    if orig:
+        lineas.append(f"**Origen / inspiración**: {ORIGEN.get(orig, orig)}")
+        lineas.append("")
+
+    # Orientación nutricional
+    nut = fmt_lista("orientacion_nutricional")
+    if nut and nut != "ninguna":
+        lineas.append(f"**Orientación nutricional prioritaria**: {nut}")
+        lineas.append("")
+
+    # Localización
+    loc = restaurante.get("localizacion", "").strip()
+    if loc:
+        lineas.append(f"**Localización**: {LOCALIZACION.get(loc, loc)}")
+        lineas.append("")
+
+    # Religión / restricciones
+    rel = fmt_lista("religion")
+    if rel and rel != "ninguna":
+        lineas.append(f"**Restricciones religiosas prioritarias**: {rel}")
+        lineas.append("")
+
+    # Tiempo
+    tie = restaurante.get("tiempo_preparacion", "").strip()
+    if tie:
+        lineas.append(f"**Tiempo del comensal**: {TIEMPO.get(tie, tie)}")
+        lineas.append("")
+
+    # Época / estilo
+    est = fmt_lista("epoca_estilo", EPOCA)
+    if est:
+        lineas.append(f"**Época / estilo**: {est}")
+        lineas.append("")
+
+    lineas.append("**REGLA DURA**: si el usuario pide algo que contradice estos datos, ")
+    lineas.append("señalá la contradicción antes de generar la ficha. NO ignores estas decisiones.")
+    lineas.append("")
+
+    return "\n".join(lineas)
+
+
 def formatear_catalogo_para_chef(catalogo: list[dict] | None = None) -> str:
     """
     Formatea el catálogo para inyectarlo como contexto al chef.

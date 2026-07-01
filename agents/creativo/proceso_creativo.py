@@ -330,7 +330,12 @@ class ProcesoCreativo:
 
     def _armar_prompt_fase_actual(self) -> str:
         """Arma el user_message para el LLM enfocado en la fase actual."""
-        from agents.creativo.agent import formatear_catalogo_para_chef, load_catalogo
+        from agents.creativo.agent import (
+            formatear_catalogo_para_chef,
+            formatear_restaurante_para_chef,
+            load_catalogo,
+            load_restaurante,
+        )
 
         fase = self.fase_actual
         # Construir contexto de fases previas (solo las completas)
@@ -345,7 +350,8 @@ class ProcesoCreativo:
             "\n\n".join(contexto_previo) if contexto_previo else "(sin fases previas)"
         )
 
-        # Inyectar el catálogo de platos si existe
+        # Inyectar el contexto del restaurante y catálogo si existen
+        restaurante_str = formatear_restaurante_para_chef(load_restaurante())
         catalogo_str = formatear_catalogo_para_chef(load_catalogo())
 
         system = (
@@ -365,6 +371,8 @@ class ProcesoCreativo:
 
         if catalogo_str:
             system = system + catalogo_str
+        if restaurante_str:
+            system = system + restaurante_str
 
         return system
 
@@ -406,11 +414,19 @@ class ProcesoCreativo:
             f"PETICIÓN: {self.peticion}\n\n"
             f"PROCESO CREATIVO:\n" + "\n\n".join(fases_contenido) + "\n\n"
         )
-        # Inyectar el catálogo si existe
-        from agents.creativo.agent import formatear_catalogo_para_chef, load_catalogo
+        # Inyectar el contexto del restaurante y catálogo si existen
+        from agents.creativo.agent import (
+            formatear_catalogo_para_chef,
+            formatear_restaurante_para_chef,
+            load_catalogo,
+            load_restaurante,
+        )
         catalogo_str = formatear_catalogo_para_chef(load_catalogo())
+        restaurante_str = formatear_restaurante_para_chef(load_restaurante())
         if catalogo_str:
             prompt_ficha = prompt_ficha + catalogo_str + "\n\n"
+        if restaurante_str:
+            prompt_ficha = prompt_ficha + restaurante_str + "\n\n"
 
         prompt_ficha = prompt_ficha + (
             "Estructura obligatoria (sin omitir secciones):\n\n"
