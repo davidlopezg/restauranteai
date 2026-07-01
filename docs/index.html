@@ -269,6 +269,102 @@
             text-decoration: underline;
         }
 
+        /* ── Proceso creativo ────────────────────────────────────────────── */
+
+        .callout {
+            background: var(--accent-light);
+            border: 1px solid var(--accent);
+            border-radius: var(--radius);
+            padding: 18px 22px;
+            margin: 0 auto 32px;
+            max-width: 640px;
+            text-align: center;
+            font-size: 0.98rem;
+            color: var(--text);
+        }
+        .callout strong {
+            color: var(--accent);
+        }
+
+        .fase-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+            gap: 14px;
+            margin-bottom: 36px;
+        }
+
+        .fase-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-left: 3px solid var(--accent);
+            border-radius: 8px;
+            padding: 16px 16px;
+            text-align: left;
+        }
+
+        .fase-card .fase-num {
+            display: inline-block;
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            color: var(--accent);
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+
+        .fase-card h4 {
+            font-size: 0.95rem;
+            font-weight: 700;
+            margin-bottom: 4px;
+            color: var(--text);
+        }
+
+        .fase-card p {
+            font-size: 0.82rem;
+            color: var(--text-muted);
+            line-height: 1.45;
+        }
+
+        .methods-block {
+            text-align: center;
+            margin-top: 12px;
+        }
+
+        .methods-block .methods-title {
+            font-size: 0.78rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 14px;
+        }
+
+        .methods-pills {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 8px;
+            max-width: 680px;
+            margin: 0 auto;
+        }
+
+        .pill {
+            display: inline-block;
+            background: var(--surface);
+            color: var(--text);
+            border: 1px solid var(--border);
+            font-size: 0.82rem;
+            font-weight: 500;
+            padding: 6px 14px;
+            border-radius: 20px;
+        }
+        .pill.pill-accent {
+            background: var(--accent-light);
+            color: var(--accent);
+            border-color: var(--accent);
+            font-weight: 600;
+        }
+
         /* ── Responsive ────────────────────────────────────────────────── */
 
         @media (max-width: 600px) {
@@ -395,16 +491,93 @@
         <div class="steps">
             <div class="step">
                 <h4>Escribís tu idea</h4>
-                <p>Describí un plato en lenguaje natural. Podés ser vago o muy específico.</p>
+                <p>Describí un plato en lenguaje natural. Vago, específico o sólo palabras sueltas.</p>
+            </div>
+            <div class="step">
+                <h4>El chef pregunta</h4>
+                <p>Antes de cocinar, detecta lo que falta (estacionalidad, ocasión, comensales, presupuesto, restricciones) y te hace sólo las preguntas necesarias. No inventa, no asume.</p>
             </div>
             <div class="step">
                 <h4>El chef razona</h4>
-                <p>IA con 25 años de "experiencia" en cocina mediterránea. Identifica alma, equilibrio, técnica y producto.</p>
+                <p>Trabaja 7 fases: alma del plato, métodos creativos, equilibrio, técnica, storytelling, descartadas y preguntas finales.</p>
             </div>
             <div class="step">
                 <h4>Recibís la ficha</h4>
                 <p>Nombre, historia, ingredientes, elaboración, maridaje y prompt de imagen. Listo para usar.</p>
             </div>
+        </div>
+    </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     PROCESO CREATIVO
+     ═══════════════════════════════════════════════════════════════════════════ -->
+
+<section id="proceso-creativo" style="background: var(--surface); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);">
+    <div class="container">
+        <h2>Proceso creativo</h2>
+
+        <div class="callout">
+            Además del modo directo, podés lanzar el <strong>proceso creativo explícito</strong>:
+            el chef trabaja el plato fase por fase y te muestra su razonamiento antes de escribir la ficha final.
+        </div>
+
+        <div class="fase-grid">
+            <div class="fase-card">
+                <span class="fase-num">Fase 1</span>
+                <h4>Alma</h4>
+                <p>Qué evoca, qué recuerdo, qué estación, qué producto.</p>
+            </div>
+            <div class="fase-card">
+                <span class="fase-num">Fase 2</span>
+                <h4>Métodos creativos</h4>
+                <p>Qué técnicas de creación aplican (de ElBulli y propias).</p>
+            </div>
+            <div class="fase-card">
+                <span class="fase-num">Fase 3</span>
+                <h4>Equilibrio</h4>
+                <p>Dulce / salado / ácido / amargo / umami / graso. El punto crítico.</p>
+            </div>
+            <div class="fase-card">
+                <span class="fase-num">Fase 4</span>
+                <h4>Técnica</h4>
+                <p>Qué procesos potencian el producto sin enmascararlo.</p>
+            </div>
+            <div class="fase-card">
+                <span class="fase-num">Fase 5</span>
+                <h4>Storytelling</h4>
+                <p>Qué historia va a contar, a quién, por qué se va a recordar.</p>
+            </div>
+            <div class="fase-card">
+                <span class="fase-num">Fase 6</span>
+                <h4>Descartadas</h4>
+                <p>Cosas que consideró y rechazó. Por qué este plato y no otro.</p>
+            </div>
+            <div class="fase-card">
+                <span class="fase-num">Fase 7</span>
+                <h4>Preguntas</h4>
+                <p>Lo que aún le preocupa o necesita validar contigo.</p>
+            </div>
+        </div>
+
+        <div class="methods-block">
+            <div class="methods-title">Métodos creativos que el chef puede aplicar</div>
+            <div class="methods-pills">
+                <span class="pill pill-accent">Lo autóctono</span>
+                <span class="pill">Influencias externas</span>
+                <span class="pill">Los sentidos como punto de partida</span>
+                <span class="pill pill-accent">El sexto sentido</span>
+                <span class="pill">Simbiosis dulce / salado</span>
+                <span class="pill pill-accent">Asociación</span>
+                <span class="pill">Inspiración</span>
+                <span class="pill">Adaptación</span>
+                <span class="pill">Deconstrucción</span>
+                <span class="pill">Minimalismo</span>
+                <span class="pill pill-accent">Sinergia</span>
+            </div>
+            <p style="margin-top: 20px; color: var(--text-muted); font-size: 0.88rem;">
+                En cada plato elige 2–3 métodos específicos y los justifica. No es decoración: es la herramienta con la que piensa.
+            </p>
         </div>
     </div>
 </section>

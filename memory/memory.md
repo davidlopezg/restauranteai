@@ -320,3 +320,20 @@ python_version: '3.11'
 - Patrón conocido: llega con ideas grandes, tiende a inflar expectativa. El agente debe anclar a tierra y validar paso a paso.
 - Limitaciones físicas: hernia discal operada, fístula. No permitir "sprint heroico".
 - Familia: María y Abril (prioridad máxima).
+
+### 2026-07-02 — Decisión de producto: la landing debe reflejar fielmente las capacidades del sistema
+
+**Contexto:** David pidió agregar a la landing lo que el chef ya hace en código (fase introductoria de discovery + proceso creativo explícito de 7 fases con métodos ElBulli). El sistema llevaba dos features implementadas pero la landing sólo contaba "modo directo" → gap de comunicación.
+
+**Regla operativa (para futuras features):**
+- Cualquier capacidad nueva que el sistema implemente debe quedar **explícita en la landing** en el mismo cambio (o en el commit inmediatamente posterior).
+- Si la feature tiene flujo visible para el usuario (ej: nuevo modo, nueva skill, nueva fase) → sección propia en la landing. Si es interna (ej: un nuevo guard de validación) → basta con mencionarla en "Tecnología" o "Cómo funciona".
+- Antes de prometer algo en la landing, **verificar que el código lo hace realmente** (grep + lectura del módulo). Nunca adornar capacidades inexistentes.
+
+**Aplicado en `docs/index.html`:**
+- Sección "Cómo funciona" ampliada de 3 a 4 pasos (incorporado el paso "El chef pregunta").
+- Sección nueva "Proceso creativo" entre "Cómo funciona" y "Tecnología" con: callout del modo explícito, 7 fase-cards con las fases reales del state machine (`proceso_creativo.py`), y 11 métodos creativos de ElBulli en pills.
+
+**Pendiente:**
+- Si el Space HF implementa UI para invocar `/proceso_creativo` desde el chat → considerar agregar CTA en la landing que distinga "modo directo" de "modo proceso creativo".
+- Subir landing a producción (push a `origin`) — es lo que dispara GitHub Pages.
