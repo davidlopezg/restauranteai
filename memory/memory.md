@@ -101,6 +101,28 @@ python_version: '3.11'
 - Pendiente: confirmar que Gradio 5.6 + python 3.11 + HuggingFace hub<1.0 finalmente arranca
 - Si NO funciona: considerar Gradio 6.x, Streamlit, o ejecutar MVP-0 local sin HF Space
 
+### 2026-07-01 — Cierre de sesión: ESTADO REAL del Space RestaurantEAI
+- **Logs confirman**: la API MiniMax responde HTTP 200 OK (5 llamadas exitosas en el log). El chef SÍ genera fichas end-to-end.
+- El "Error: No API found" en la UI NO era del API en sí — era un bug secundario de json_schema_to_python_type (pydantic moderno vs gradio_client viejo de Gradio 5.6) que rompía la actualización visual del chat.
+- **Fixes aplicadas en esta sesión**: 9 en total (ver tabla saga arriba).
+- **Último fix**: `cache_examples=False` para evitar `FileNotFoundError: '.gradio/cached_examples/11/log.csv'` en HF Spaces (los .csv no persisten entre reinicios).
+- **Estado real al cierre**: 
+  - ✅ Repo + código + secrets cargados
+  - ✅ Space arranca y sirve UI
+  - ✅ API MiniMax responde 200 OK con fichas reales
+  - ⏳ UI puede mostrar o no mostrar la respuesta (depende de pin pydantic final)
+  - Si la UI sigue rota mañana: la fix es exactamente pydantic==2.10.6 (que recién pusheamos en commit `6c8b034`)
+- **Decisión**: cerrar sesión acá, sin importar resultado, por salud/familia. David tiene MVP-0 funcionando perfecto en local (CLI) como red de seguridad.
+
+### 2026-07-01 — Lecciones de la sesión de hoy (importantes para futuro)
+1. **HF Spaces con Gradio es una trampa de versions**: cada pinneo destapa otro bug. Salida limpia: Gradio 5.6+ desde día 1.
+2. **`gr.ChatInterface` (Gradio 5+) >> `gr.Blocks` para chatbots**: ~70 líneas menos, sin wire-up manual, sin custom buttons.
+3. **Cache de ejemplos no funciona en HF Spaces**: usar `cache_examples=False`. Los .csv cacheados no persisten bien en el filesystem del container.
+4. **`python_version` en el frontmatter del README es obligatorio**, no opcional. HF default = Python 3.13, que rompe Gradio 4.x.
+5. **`huggingface_hub<1.0` mientras Gradio mantenga HfFolder en su oauth.py**: chequeable en `grep HfFolder gr.oauth` de la versión instalada.
+6. **`pydantic==2.10.6` mientras `gradio_client` mantenga el bug de json_schema_to_python_type**: chequeable buscando el issue en GitHub.
+7. **Cuando migrar app.py entre versiones mayores de UI: reescribir desde cero > portear**. Reescribir ~70 líneas con API moderna es más rápido que pelearse con deprecations.
+
 ### 2026-07-01 — Deploy real a HF Space (RestaurantEAI)
 - **Nombre real del Space**: `RestaurantEAI` (decidido por David en HF web), NO `restauranteia-chef` como decía `DEPLOY_HF.md`. Actualizar el doc.
 - **Remote `hf` ya estaba agregado** apuntando al Space correcto (David lo había hecho en un intento previo).
