@@ -8,3 +8,4 @@ python-dotenv>=1.0.0   # Carga de .env
 # --- UI (MVP-0.5: HF Space) ---
 gradio>=5.6,<6.0       # Framework UI para Space público (Gradio 5+ simplifica ChatInterface y arregla incompatibilidades de Gradio 4 con stacks modernas)
 huggingface_hub>=0.19.3,<1.0  # PIN: HfFolder eliminado en v1.0 — Gradio 5.6 todavía lo importa (gradio/oauth.py)
+pydantic==2.10.6       # PIN: pydantic>=2.11 rompe json_schema_to_python_type de Gradio (la API funciona pero la UI falla al refrescar)
