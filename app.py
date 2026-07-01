@@ -146,12 +146,30 @@ def construir_ui() -> gr.Blocks:
             *Generador de fichas culinarias con IA. Pedime un plato en lenguaje
             natural y te devuelvo nombre, historia, ficha técnica, maridaje y
             prompt para imagen.*
-
-            ---
-
-            ### 💡 Ejemplos para probar
             """
         )
+
+        chatbot = gr.Chatbot(
+            label="Conversación",
+            height=420,
+            show_label=False,
+            avatar_images=(None, "🍂"),
+            type="tuples",
+        )
+
+        # Definimos `msg` ANTES de los botones de ejemplo porque los botones
+        # referencian `msg` en `outputs=`. El layout visual queda: chat arriba,
+        # input abajo, ejemplos como inspiración, clear al final.
+        with gr.Row():
+            msg = gr.Textbox(
+                placeholder="Escribí tu petición culinaria y presioná Enter...",
+                label="Petición",
+                scale=4,
+                autofocus=True,
+            )
+            send = gr.Button("Enviar 🍳", scale=1, variant="primary")
+
+        gr.Markdown("\n### 💡 Ejemplos para probar\n*(clickeá para copiarlos al input)*\n")
 
         with gr.Row():
             for ejemplo in PROMPT_EJEMPLOS[:3]:
@@ -166,23 +184,6 @@ def construir_ui() -> gr.Blocks:
                     fn=lambda txt=ejemplo: txt,
                     outputs=msg,
                 )
-
-        chatbot = gr.Chatbot(
-            label="Conversación",
-            height=420,
-            show_label=False,
-            avatar_images=(None, "🍂"),
-            type="tuples",
-        )
-
-        with gr.Row():
-            msg = gr.Textbox(
-                placeholder="Escribí tu petición culinaria y presioná Enter...",
-                label="Petición",
-                scale=4,
-                autofocus=True,
-            )
-            send = gr.Button("Enviar 🍳", scale=1, variant="primary")
 
         clear = gr.Button("🧹 Limpiar conversación")
 
