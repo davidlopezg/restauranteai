@@ -130,6 +130,7 @@ footer {visibility: hidden}
 demo = gr.ChatInterface(
     fn=responder,
     title="🍂 Chef Creativo — RestaurantEAI",
+    cache_examples=False,  # deshabilitar cache de ejemplos (en HF Spaces los .csv no persisten entre reinicios)
     description=(
         "Generador de fichas culinarias con IA. Pedime un plato en lenguaje natural "
         "y te devuelvo nombre, historia, ficha técnica, maridaje y prompt para imagen."
