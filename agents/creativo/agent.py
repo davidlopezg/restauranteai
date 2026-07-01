@@ -101,6 +101,92 @@ def load_estacionalidad() -> dict:
     return json.loads(ESTACIONALIDAD_PATH.read_text(encoding="utf-8"))
 
 
+# ---------------------------------------------------------------------------
+# Catálogo de platos — inyectado al system prompt del chef
+# ---------------------------------------------------------------------------
+
+CATALOGO_MAX_PLATOS_INYECTADOS: int = 30  # cap para no inflar el system prompt
+
+
+def load_catalogo() -> list[dict]:
+    """Carga el catálogo de platos del restaurante (de la fase init).
+
+    Devuelve lista vacía si no existe.
+    """
+    from agents.knowledge_context import cargar_catalogo
+    try:
+        return cargar_catalogo()
+    except FileNotFoundError:
+        return []
+
+
+def formatear_catalogo_para_chef(catalogo: list[dict] | None = None) -> str:
+    """
+    Formatea el catálogo para inyectarlo como contexto al chef.
+
+    Args:
+        catalogo: lista de platos. Si None, se carga del disco.
+
+    Returns:
+        String con el catálogo formateado, o string vacío si no hay.
+    """
+    if catalogo is None:
+        catalogo = load_catalogo()
+
+    if not catalogo:
+        return ""
+
+    lineas = [
+        "\n\n---\n",
+        "## CATÁLOGO ACTUAL DEL RESTAURANTE",
+        "",
+        "Estos son los platos que ya están en la carta del restaurante.",
+        "Usá esta información para:",
+        "- NO proponer platos idénticos o muy similares a los existentes.",
+        "- Sugerir COMPLEMENTOS: si ya hay una pasta, proponer un segundo plato de otra familia.",
+        "- Mantener la LÍNEA CULINARIA: si la carta es mediterránea, no proponer sushi.",
+        "- Si el usuario pide un plato similar a uno existente, ofrecé EXTENDER la línea "
+        "(versión contemporánea, variante de temporada, etc.) en vez de duplicar.",
+        "",
+        f"Total de platos en carta: {len(catalogo)}.",
+        "",
+    ]
+
+    # Limitar para no inflar el prompt
+    platos_mostrar = catalogo[:CATALOGO_MAX_PLATOS_INYECTADOS]
+    if len(catalogo) > CATALOGO_MAX_PLATOS_INYECTADOS:
+        lineas.append(
+            f"(mostrando los primeros {CATALOGO_MAX_PLATOS_INYECTADOS} de {len(catalogo)})\n"
+        )
+
+    # Agrupar por categoría para que sea más legible
+    por_categoria: dict[str, list[dict]] = {}
+    for p in platos_mostrar:
+        cat = str(p.get("categoria", "otro")).strip().lower()
+        por_categoria.setdefault(cat, []).append(p)
+
+    for cat in sorted(por_categoria.keys()):
+        lineas.append(f"### {cat.capitalize()}")
+        for p in por_categoria[cat]:
+            nombre = str(p.get("nombre", "")).strip()
+            if not nombre:
+                continue
+            desc = str(p.get("descripcion", "")).strip()
+            precio = p.get("precio")
+            partes = [f"- **{nombre}**"]
+            if desc:
+                partes.append(f" — {desc}")
+            if precio is not None:
+                try:
+                    partes.append(f" ({float(precio):.2f}€)")
+                except (ValueError, TypeError):
+                    pass
+            lineas.append("".join(partes))
+        lineas.append("")
+
+    return "\n".join(lineas)
+
+
 # --- Detección de idioma ----------------------------------------------------
 
 def _es_principalmente_espanol(texto: str) -> bool:

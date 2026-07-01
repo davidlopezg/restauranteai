@@ -256,7 +256,30 @@ PREGUNTAS_RESTAURANTE: list[dict] = [
 ]
 
 PREGUNTAS_POR_PLATO: list[dict] = [
-    # Lo definiremos cuando sepamos qué catalogar exactamente.
+    {
+        "key": "nombre",
+        "prompt": "Nombre del plato",
+        "type": "text",
+        "help": "Ej: Risotto de setas con trufa",
+    },
+    {
+        "key": "categoria",
+        "prompt": "Categoría del plato",
+        "type": "choice",
+        "options": ["entrante", "principal", "postre", "guarnicion", "bebida", "otro"],
+    },
+    {
+        "key": "descripcion",
+        "prompt": "Descripción breve (opcional, dejá vacío para saltar)",
+        "type": "text",
+        "help": "Una línea: qué es, qué lleva, qué lo hace especial.",
+    },
+    {
+        "key": "precio",
+        "prompt": "Precio en € (opcional, dejá vacío para saltar)",
+        "type": "number",
+        "help": "Sin moneda ni símbolos. Ej: 18.50",
+    },
 ]
 
 
@@ -419,14 +442,173 @@ def _recolectar_restaurante() -> dict:
     return respuestas
 
 
+def _leer_multilinea(prompt_inicial: str, terminador: str = "FIN") -> str:
+    """
+    Lee múltiples líneas de stdin hasta que el usuario escriba el terminador solo.
+    Útil para pegar cartas o menús largos.
+    """
+    print(prompt_inicial)
+    print(f"   (escribí {terminador} solo en una línea para terminar)")
+    lineas = []
+    while True:
+        try:
+            linea = input("   > ")
+        except EOFError:
+            break
+        if linea.strip() == terminador:
+            break
+        lineas.append(linea)
+    return "\n".join(lineas).strip()
+
+
+def _extraer_platos_de_carta(carta_texto: str) -> list[dict]:
+    """
+    Usa el LLM para extraer una lista estructurada de platos desde texto libre.
+    El LLM devuelve JSON; lo parseamos y normalizamos.
+
+    Args:
+        carta_texto: texto pegado por el usuario (carta, menú, lista de platos).
+
+    Returns:
+        Lista de dicts con keys: nombre, categoria, descripcion, precio.
+    """
+    if not carta_texto.strip():
+        return []
+
+    # Import local para evitar import circular: init_phase.py -> agent.py
+    from agents.creativo.agent import call_minimax
+
+    system = (
+        "Extraé una lista estructurada de platos de la carta o menú que te paso. "
+        "Para CADA plato devolvé un objeto con estos campos exactos:\n"
+        "  - 'nombre': string con el nombre del plato\n"
+        "  - 'categoria': uno de ['entrante', 'principal', 'postre', 'guarnicion', 'bebida', 'otro']\n"
+        "  - 'descripcion': string con descripción breve (una línea), o string vacío si no hay\n"
+        "  - 'precio': número (precio en euros, sin símbolos), o null si no está en la carta\n\n"
+        "Reglas:\n"
+        "- NO inventes platos que no estén en el texto.\n"
+        "- Si un campo no está claro, usá string vacío o null según corresponda.\n"
+        "- Devolvé SOLO un JSON array válido, sin markdown, sin explicaciones.\n"
+        "- Si la carta no tiene platos identificables, devolvé [] (array vacío).\n\n"
+        "Ejemplo de output:\n"
+        '[{"nombre": "Risotto de setas", "categoria": "principal", "descripcion": "Con trufa negra", "precio": 22.0}]'
+    )
+
+    user = f"Carta / menú del restaurante:\n\n{carta_texto}"
+
+    try:
+        respuesta = call_minimax(system, user)
+    except Exception as e:
+        print(f"   ⚠️  Error llamando al LLM: {e}")
+        return []
+
+    # Intentar parsear la respuesta como JSON
+    import json
+    import re
+
+    # Limpiar: a veces viene con ```json ... ``` o con texto alrededor
+    texto = respuesta.strip()
+    # Buscar el primer array JSON en la respuesta
+    match = re.search(r'\[.*\]', texto, re.DOTALL)
+    if match:
+        texto = match.group(0)
+
+    try:
+        platos = json.loads(texto)
+    except json.JSONDecodeError as e:
+        print(f"   ⚠️  No se pudo parsear la respuesta del LLM como JSON: {e}")
+        print(f"   Respuesta cruda (primeros 500 chars): {texto[:500]}")
+        return []
+
+    if not isinstance(platos, list):
+        print(f"   ⚠️  El LLM no devolvió un array: {type(platos)}")
+        return []
+
+    # Normalizar cada plato
+    categorias_validas = {"entrante", "principal", "postre", "guarnicion", "bebida", "otro"}
+    normalizados = []
+    for p in platos:
+        if not isinstance(p, dict):
+            continue
+        nombre = str(p.get("nombre", "")).strip()
+        if not nombre:
+            continue
+        categoria = str(p.get("categoria", "otro")).strip().lower()
+        if categoria not in categorias_validas:
+            categoria = "otro"
+        descripcion = str(p.get("descripcion", "")).strip()
+        precio_raw = p.get("precio")
+        try:
+            precio = float(precio_raw) if precio_raw is not None and precio_raw != "" else None
+        except (ValueError, TypeError):
+            precio = None
+        normalizados.append({
+            "nombre": nombre,
+            "categoria": categoria,
+            "descripcion": descripcion,
+            "precio": precio,
+        })
+
+    return normalizados
+
+
 def _recolectar_catalogo() -> list[dict]:
-    """Pregunta cuántos platos catalogar y luego pregunta por cada uno."""
+    """
+    Recolecta el catálogo de platos. Tres modos:
+    1. Pegar carta/menú completo (recomendado): el LLM lo extrae
+    2. Manual: pregunta plato por plato
+    3. Saltar: catálogo vacío
+
+    Returns:
+        Lista de dicts con keys: nombre, categoria, descripcion, precio.
+    """
+    print("\n🍽️  CATÁLOGO DE PLATOS\n")
+    print("Opciones:")
+    print("  1 — Pegar tu carta / menú completo (recomendado). El chef lo estructura.")
+    print("  2 — Manual: meter los platos uno por uno.")
+    print("  3 — Saltar por ahora (catálogo vacío).")
+    print()
+
+    while True:
+        modo = input("➤ Elige 1, 2 o 3 > ").strip()
+        if modo in ("1", "2", "3", ""):
+            break
+        print("   (elegí 1, 2 o 3)")
+
+    if modo == "3" or not modo:
+        print("   (sin catálogo por ahora — podés agregarlo después con /catalogo)")
+        return []
+
+    if modo == "1":
+        # Pegar carta completa
+        carta = _leer_multilinea(
+            "\n📋 Pegá tu carta o menú completo. Puede ser texto plano, "
+            "markdown, lo que tengas. Escribí FIN solo en una línea para terminar:"
+        )
+        if not carta:
+            print("   (carta vacía, saltando)")
+            return []
+
+        print(f"\n   Procesando {len(carta)} caracteres de carta...")
+        platos = _extraer_platos_de_carta(carta)
+        if platos:
+            print(f"\n   ✓ Extraídos {len(platos)} platos:")
+            for p in platos[:10]:  # mostrar máx 10
+                precio_str = f" — {p['precio']:.2f}€" if p.get("precio") is not None else ""
+                print(f"     · [{p['categoria']:10s}] {p['nombre']}{precio_str}")
+            if len(platos) > 10:
+                print(f"     ... y {len(platos) - 10} más")
+        else:
+            print("   ⚠️  No se pudieron extraer platos. ¿Formato no reconocido?")
+            print("      Podés probar el modo manual (opción 2).")
+        return platos
+
+    # modo == "2" — manual
     if not PREGUNTAS_POR_PLATO:
         print("\n⚠️  PREGUNTAS_POR_PLATO está vacío en init_phase.py.")
         print("   (catalogo_platos.json se generará como lista vacía [])")
         return []
 
-    print("\n🍽️  CATÁLOGO DE PLATOS\n")
     n_str = ""
     while not n_str.isdigit():
         n_str = input("➤ ¿Cuántos platos querés catalogar ahora? (0 para saltar): ").strip()

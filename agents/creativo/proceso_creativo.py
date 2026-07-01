@@ -330,6 +330,8 @@ class ProcesoCreativo:
 
     def _armar_prompt_fase_actual(self) -> str:
         """Arma el user_message para el LLM enfocado en la fase actual."""
+        from agents.creativo.agent import formatear_catalogo_para_chef, load_catalogo
+
         fase = self.fase_actual
         # Construir contexto de fases previas (solo las completas)
         contexto_previo = []
@@ -343,6 +345,9 @@ class ProcesoCreativo:
             "\n\n".join(contexto_previo) if contexto_previo else "(sin fases previas)"
         )
 
+        # Inyectar el catálogo de platos si existe
+        catalogo_str = formatear_catalogo_para_chef(load_catalogo())
+
         system = (
             "Eres Chef Creativo Senior trabajando UNA fase del proceso creativo. "
             "Idioma: castellano. Solo el campo 'PROMPT PARA IMAGEN' puede ir en inglés al final.\n\n"
@@ -350,13 +355,17 @@ class ProcesoCreativo:
             f"FASE ACTUAL ({fase['orden']}/7): {fase['nombre']}\n"
             f"INSTRUCCIÓN PARA ESTA FASE: {fase['instruccion_llm']}\n\n"
             f"CONTEXTO DE FASES PREVIAS:\n{contexto_str}\n\n"
-            "REGLAS DURAS:\n"
-            "- Devolvé SOLO el contenido de esta fase.\n"
-            "- NO generes las otras fases.\n"
-            "- NO hagas la ficha final.\n"
-            "- 2-5 frases como máximo.\n"
-            "- Idioma: castellano. Sin caracteres cirílicos, hanzi, etc."
+            f"REGLAS DURAS:\n"
+            f"- Devolvé SOLO el contenido de esta fase.\n"
+            f"- NO generes las otras fases.\n"
+            f"- NO hagas la ficha final.\n"
+            f"- 2-5 frases como máximo.\n"
+            f"- Idioma: castellano. Sin caracteres cirílicos, hanzi, etc."
         )
+
+        if catalogo_str:
+            system = system + catalogo_str
+
         return system
 
     def trabajar_fase_actual(self) -> str:
@@ -396,6 +405,14 @@ class ProcesoCreativo:
             "usando como base el proceso creativo completo que ya está en tu memoria.\n\n"
             f"PETICIÓN: {self.peticion}\n\n"
             f"PROCESO CREATIVO:\n" + "\n\n".join(fases_contenido) + "\n\n"
+        )
+        # Inyectar el catálogo si existe
+        from agents.creativo.agent import formatear_catalogo_para_chef, load_catalogo
+        catalogo_str = formatear_catalogo_para_chef(load_catalogo())
+        if catalogo_str:
+            prompt_ficha = prompt_ficha + catalogo_str + "\n\n"
+
+        prompt_ficha = prompt_ficha + (
             "Estructura obligatoria (sin omitir secciones):\n\n"
             "🍂 NOMBRE DEL PLATO\n"
             "[2-4 palabras evocadoras]\n\n"
