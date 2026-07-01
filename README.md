@@ -9,7 +9,7 @@ python_version: '3.11'
 app_file: app.py
 pinned: false
 license: mit
-short_description: Chef IA: fichas y proceso creativo
+short_description: "Chef IA: fichas y proceso creativo"
 ---
 
 # 🍂 Chef Creativo — RestaurantEAI
