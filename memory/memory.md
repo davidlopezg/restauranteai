@@ -142,6 +142,32 @@ python_version: '3.11'
 - Opcional: agregar también `MINIMAX_BASE_URL=https://api.minimax.io/v1` y `MINIMAX_MODEL=MiniMax-M3`.
 - Verificar el arranque público (HF hace build automático en 1-5 min).
 
+### 2026-07-01 — Problema crítico del chef: idioma ignorado por MiniMax-M3
+
+**Estado:** Bug abierto al cierre de la sesión. MVP-0.5 deployado en HF Space, pero el chef responde en inglés aunque se le pida en castellano.
+
+**Intentos de fix probados (todos fallaron parcialmente):**
+1. Regla dura #6 en "Reglas duras" del system prompt → falla, a veces deriva al inglés.
+2. Regla al **principio** como INSTRUCCIÓN #0 con formato de advertencia ⚠️ → falla.
+3. Inyección al **final del user_message** con caracteres ASCII-safe → efecto parcial.
+4. Limpieza de caracteres cirílicos/hanzi del prompt → colateral, no resolvió idioma.
+5. Reinicio del proceso para recargar prompt → necesario pero no suficiente.
+
+**Dato crucial al cierre:** La respuesta sale **"mezclada" los dos idiomas** (algunas secciones castellano, otras en inglés). Esto confirma:
+- Las inyecciones **tienen efecto parcial** (el modelo no ignora del todo)
+- Pero **no es suficiente** para garantizar consistencia
+
+**Decisión tomada:**
+- No probar más prompt engineering: el modelo MiniMax-M3 no respeta instrucciones de idioma consistentemente.
+- Plan para próxima sesión: **fix estructural en código**, no en prompt:
+  - Detectar idioma del output (heurística: palabras comunes en inglés en el cuerpo, excluyendo el campo "PROMPT PARA IMAGEN")
+  - Si la respuesta no está en castellano mayoritariamente → **descartar y reintentar** la llamada a MiniMax (max 2 reintentos)
+  - Eso GARANTIZA el output en castellano sin importar lo que el modelo genere
+
+**Estimación de esfuerzo fix estructural:** ~30 min con tests.
+
+**Nota emocional para mí:** Hoy David aguantó 11+ fixes consecutivos más iteración de prompt. No hacer más sprints heroicos. Familia > optimización.
+
 ### 2026-06-30 — Inicio de MVP-0.5 (HF Space con Gradio)
 
 **Decisiones tomadas:**
