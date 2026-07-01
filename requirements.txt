@@ -7,4 +7,5 @@ python-dotenv>=1.0.0   # Carga de .env
 
 # --- UI (MVP-0.5: HF Space) ---
 gradio>=6.19,<7.0      # Última estable 6.x (incluye bugfixes del bug de UI ChatInterface messages y json_schema_to_python_type)
-huggingface_hub>=0.19.3,<1.0  # PIN defensivo (Gradio 6 probablemente ya no usa HfFolder, pero por las dudas)
+# huggingface_hub: SIN PIN. Gradio 6.19 ya no usa HfFolder — requiere huggingface-hub>=1.2.0,<2.0 (Gestionado por Gradio)
+huggingface_hub>=1.2,<2.0  # Pin compatible con Gradio 6 (lo resuelve automáticamente, pero lo explicitamos para claridad)
