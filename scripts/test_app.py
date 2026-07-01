@@ -32,16 +32,14 @@ APP_PY = PROJECT_ROOT / "app.py"
 
 def check(label: str, ok: bool, detalle: str = "") -> bool:
     """Mini-helper para imprimir resultados. Devuelve True si pasó."""
-    icon = "✓" if ok else "✗"
-    color = "\033[32m" if ok else "\033[31m"
-    reset = "\033[0m"
-    print(f"   {color}{icon}{reset} {label}{(': ' + detalle) if detalle else ''}")
+    icon = "[PASS]" if ok else "[FAIL]"
+    print(f"   {icon} {label}{(': ' + detalle) if detalle else ''}")
     return ok
 
 
 def cargar_ast(path: Path) -> ast.Module:
     """Parsea el archivo a AST. Levanta SyntaxError si el código no compila."""
-    return ast.parse(path.read_text())
+    return ast.parse(path.read_text(encoding="utf-8"))
 
 
 def test_sintaxis() -> bool:
@@ -55,7 +53,7 @@ def test_sintaxis() -> bool:
 
 def test_kwarg_prohibidos() -> bool:
     print("\n[2/5] Búsqueda de kwargs prohibidos (Gradio 6.19+)")
-    src = APP_PY.read_text()
+    src = APP_PY.read_text(encoding="utf-8")
     ok = True
 
     # En Gradio 6, theme/css ya NO van al constructor de gr.Blocks
@@ -118,7 +116,7 @@ def test_firma_responder() -> bool:
 
 def test_chatinterface_dentro_de_blocks() -> bool:
     print("\n[4/5] gr.ChatInterface está dentro de gr.Blocks")
-    src = APP_PY.read_text()
+    src = APP_PY.read_text(encoding="utf-8")
     # En Gradio 6 lo correcto es envolver en gr.Blocks() as demo:
     # y dentro usar gr.ChatInterface(...)
     if re.search(r"with\s+gr\.Blocks[\s\S]*?\n\s*gr\.ChatInterface\s*\(", src):
@@ -129,7 +127,7 @@ def test_chatinterface_dentro_de_blocks() -> bool:
 
 def test_launch_con_theme_css() -> bool:
     print("\n[5/5] launch() recibe theme y css")
-    src = APP_PY.read_text()
+    src = APP_PY.read_text(encoding="utf-8")
 
     if re.search(r"\.launch\s*\([^)]*theme\s*=", src, re.DOTALL):
         return check("launch() recibe theme=", True)
@@ -138,6 +136,72 @@ def test_launch_con_theme_css() -> bool:
     # si no está, no es obligatorio pero recomendado
     return check("launch() tiene theme y css", False,
                  "(no obligatorio, pero recomendado para branding)")
+
+
+def test_deteccion_idioma() -> bool:
+    """Test para _es_principalmente_espanol() de agent.py"""
+    print("\n[6/6] Detección de idioma (_es_principalmente_espanol)")
+    sys.path.insert(0, str(PROJECT_ROOT))
+    try:
+        from agents.creativo.agent import _es_principalmente_espanol
+    except ImportError as e:
+        return check("Importar _es_principalmente_espanol", False, str(e))
+
+    check("Importar _es_principalmente_espanol", True)
+    ok = True
+
+    # Caso 1: ficha en español → True
+    ficha_es = """🍂 CALABAZA DE OTOÑO
+📝 HISTORIA
+Este plato evoca los colores del otoño en la Garrotxa.
+📋 FICHA TÉCNICA
+Ingredientes (para 4 raciones):
+- Calabaza 500g — asada al horno
+- Queso de cabra 200g — fresco
+Elaboración:
+1. Asar la calabaza a 180°C durante 40 minutos.
+🍷 MARIDAJE
+- Vino blanco joven del Penedès.
+🎨 PROMPT PARA IMAGEN DEL PLATO
+A rustic ceramic plate with roasted pumpkin and goat cheese, top-down view, warm natural lighting."""
+    ok &= check("Ficha en espanol -> True", _es_principalmente_espanol(ficha_es))
+
+    # Caso 2: ficha en inglés → False
+    ficha_en = """🍂 AUTUMN HARVEST
+📝 STORY
+This dish brings the colors of autumn in Catalonia.
+📋 TECHNICAL SHEET
+Ingredients (serves 4):
+- Pumpkin 500g — roasted
+- Goat cheese 200g — fresh
+Preparation:
+1. Roast the pumpkin at 180°C for 40 minutes.
+🍷 PAIRING
+- Young white wine from Penedès.
+🎨 PROMPT PARA IMAGEN DEL PLATO
+A rustic ceramic plate with roasted pumpkin and goat cheese, top-down view."""
+    ok &= check("Ficha en ingles -> False", not _es_principalmente_espanol(ficha_en))
+
+    # Caso 3: mezcla español+inglés (el bug real) → False
+    ficha_mixta = """🍂 CALABAZA DE OTOÑO
+📝 HISTORIA / STORYTELLING
+This dish evokes the colors of autumn in the Garrotxa.
+📋 FICHA TÉCNICA
+Ingredients (para 4 raciones):
+- Calabaza 500g — asada al horno
+- Queso de cabra 200g — fresco
+Elaboración:
+1. Roast the pumpkin at 180°C for 40 minutes.
+🍷 MARIDAJE
+- Vino blanco joven del Penedès.
+🎨 PROMPT PARA IMAGEN DEL PLATO
+A rustic ceramic plate with roasted pumpkin."""
+    ok &= check("Mezcla espanol+ingles -> False", not _es_principalmente_espanol(ficha_mixta))
+
+    # Caso 4: texto corto → True (no hay suficiente muestra)
+    ok &= check("Texto muy corto -> True", _es_principalmente_espanol("Hola"))
+
+    return ok
 
 
 def main() -> int:
@@ -151,15 +215,16 @@ def main() -> int:
         test_firma_responder(),
         test_chatinterface_dentro_de_blocks(),
         test_launch_con_theme_css(),
+        test_deteccion_idioma(),
     ]
 
     print("\n" + "=" * 60)
     if all(resultados):
-        print("\033[32m✓✓✓ Todos los tests pasaron. Listo para pushear.\033[0m")
+        print("[PASS] Todos los tests pasaron. Listo para pushear.")
         return 0
     else:
         n_fail = sum(1 for r in resultados if not r)
-        print(f"\033[31m✗ {n_fail} test(s) fallaron. NO pushear todavía.\033[0m")
+        print(f"[FAIL] {n_fail} test(s) fallaron. NO pushear todavia.")
         return 1
 
 

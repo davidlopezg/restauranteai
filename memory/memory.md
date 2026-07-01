@@ -253,11 +253,13 @@ python_version: '3.11'
 
 ## Estado del proyecto
 
-- Repo inicializado: ✅ (commit vacío)
-- Estructura de carpetas: ✅ (`agents/creativo/`, `memory/`, `conversations/`, `scripts/`)
-- MVP-0 código: 🔄 (en generación)
-- MVP-0 probado por David: ⏳
-- MVP-0.5 (HF Space público): ⏳
+- Repo inicializado: ✅
+- Estructura de carpetas: ✅
+- MVP-0 código: ✅
+- MVP-0 probado por David: ✅
+- MVP-0.5 (HF Space público): ✅
+- MVP-1 (Landing page): ✅ (`docs/index.html`)
+- Fix estructural idioma: ✅ (detección + reintento en `call_minimax`)
 
 ### 2026-07-01 — Decisión de arquitectura: opciones del init externalizadas a JSON + fallback "otra (escribir)"
 
@@ -280,6 +282,28 @@ python_version: '3.11'
 **Pendiente / próximo opcional:**
 - Decidir si extender el patrón a otras dimensiones que puedan crecer (ej: catálogo de ingredientes, productores locales de Cataluña).
 - Auditoría rápida: ¿algún consumidor de `restaurante.json` asume lista cerrada? (Búsqueda inicial: `system_chef.md` no lo hace — usa los datos como contexto cualitativo).
+
+### 2026-07-01 — Fix estructural de idioma + Landing Page (MVP-1)
+
+**Fix de idioma implementado en `agents/creativo/agent.py`:**
+- Nueva función `_es_principalmente_espanol(texto)` con heurística de palabras gatillo.
+  - Recorta la sección "PROMPT PARA IMAGEN" (puede ir en inglés por convención).
+  - Cuenta palabras inglesas de alta confianza (function words sin cognados: "the", "and", "with", etc.).
+  - Si más del 8% de palabras son inglesas → se considera respuesta en inglés.
+- `call_minimax()` ahora acepta `force_spanish=True` por defecto.
+  - Si la respuesta no pasa el filtro → modifica el user prompt con instrucción URGENTE, baja temperatura a 0.2, y reintenta (máx 2 reintentos de idioma).
+  - Total máximo: 2 HTTP retries + 2 language retries = 4 intentos.
+  - Si agota los reintentos, devuelve igual pero loggea warning.
+- El fix aplica tanto para `generar_ficha()` (CLI) como para `app.py` (HF Space), porque ambas usan `call_minimax()`.
+
+**Landing Page creada (`docs/index.html`):**
+- HTML autocontenido, sin dependencias externas, responsive.
+- Secciones: hero con CTA al HF Space, features (6 tarjetas), ejemplos, cómo funciona (3 pasos), stack técnico, footer.
+- Diseño limpio, tono mediterráneo, paleta de colores cálida (rojo tejón + crema).
+- Se usa `docs/` (soportado nativamente por GitHub Pages, sin workflow).
+- Activación: Settings → Pages → Source: Deploy from branch → `main` + `/docs`.
+
+**README.md actualizado** con nuevo roadmap y estructura de carpetas.
 
 ## Datos del usuario (David)
 

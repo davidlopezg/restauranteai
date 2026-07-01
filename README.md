@@ -37,8 +37,10 @@ Sistema multi-agente de IA especializado en hostelería, inspirado en proyectos 
 - ✅ Repo inicializado
 - ✅ Estructura de carpetas
 - ✅ **MVP-0: Agente Chef Creativo** (script local + system prompt, validado end-to-end)
-- 🔄 **MVP-0.5: Despliegue público en Hugging Face Space** (código listo, pendiente deploy)
-- ⏳ Fase 1: Agente de Memoria / CRM
+- ✅ **MVP-0.5: Despliegue público en Hugging Face Space** (https://huggingface.co/spaces/davidlopezgamero/RestaurantEAI)
+- ✅ **MVP-1: Landing page** (`docs/index.html` — lista para GitHub Pages)
+- ✅ **Fix estructural de idioma** (detección + reintento automático si el chef responde en inglés)
+- 🔄 Fase 1: Agente de Memoria / CRM
 - ⏳ Fase 2: Resto de agentes (Producción, Marketing, Recepción, Financiero)
 - ⏳ Fase 3: SaaS + monetización
 
@@ -115,10 +117,12 @@ restauranteia/
 │       └── knowledge/
 │           ├── estacionalidad.json  # Calendario de temporada Cataluña
 │           └── combinaciones_clasicas.csv  # Maridajes y contrastes probados
+├── docs/
+│   └── index.html             # Landing page (MVP-1)
 ├── memory/
 │   └── memory.md              # Aprendizaje del agente
-├── conversations/             # Historial de sesiones (futuro)
-├── scripts/                   # Utilidades (futuro)
+├── conversations/             # Historial de sesiones
+├── scripts/                   # Tests de regresión
 ├── .env.example               # Plantilla de variables de entorno
 ├── requirements.txt           # Dependencias
 └── README.md                  # Este archivo
@@ -143,11 +147,12 @@ Toma una petición en lenguaje natural y devuelve una ficha estructurada con:
 
 ## Próximos pasos (no commits, solo roadmap mental)
 
-1. **MVP-0 validado por vos** (5-10 prompts de prueba, ajustar system prompt si hace falta).
-2. **MVP-0.5**: Levantar en Hugging Face Spaces con Gradio → chat público sin instalar nada.
-3. **MVP-1**: GitHub Pages con HTML propio que conecte al Space.
-4. **Fase 2**: Empezar Agente de Memoria (el siguiente más sencillo).
-5. **Fase 3**: Empezar a plantear modelo SaaS (cuando haya tracción real, no antes).
+1. ~~MVP-0 validado~~ ✅
+2. ~~MVP-0.5 HF Space~~ ✅
+3. ~~MVP-1 Landing Page~~ ✅ (`docs/index.html`)
+4. **MVP-1.5**: Activar GitHub Pages → Settings → Pages → Source: `main` + carpeta `/docs`
+5. **Fase 2**: Agente de Memoria (el siguiente más sencillo).
+6. **Fase 3**: Plantear modelo SaaS (cuando haya tracción real, no antes).
 
 ## Licencia
 

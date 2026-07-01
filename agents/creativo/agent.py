@@ -55,6 +55,17 @@ MODEL = os.getenv("MINIMAX_MODEL", DEFAULT_MODEL)
 # Timeout y reintentos
 REQUEST_TIMEOUT = 60.0
 MAX_RETRIES = 2
+LANGUAGE_RETRIES = 2  # reintentos adicionales si el chef responde en inglés
+
+# Palabras de alta confianza que NO deberían aparecer en una ficha en castellano.
+# Son function words + vocabulario común inglés sin cognados en español.
+_PALABRAS_GATILLO_INGLES: set[str] = {
+    "the", "and", "with", "for", "you", "this", "that", "are",
+    "your", "from", "have", "would", "will", "each", "into",
+    "just", "also", "well", "after", "our", "when", "which",
+    "their", "what", "been", "has", "its", "over", "than",
+    "then", "these", "some", "them", "very", "much", "such",
+}
 
 
 # --- Carga de recursos -------------------------------------------------------
@@ -76,9 +87,44 @@ def load_estacionalidad() -> dict:
     return json.loads(ESTACIONALIDAD_PATH.read_text(encoding="utf-8"))
 
 
+# --- Detección de idioma ----------------------------------------------------
+
+def _es_principalmente_espanol(texto: str) -> bool:
+    """
+    Detecta si el texto está mayoritariamente en español.
+    Excluye la sección 'PROMPT PARA IMAGEN' porque puede ir en inglés por convención.
+    
+    Heurística: cuenta palabras gatillo inglesas en el cuerpo.
+    Si más del 8% de las palabras son gatillos ingleses → no es español.
+    """
+    # Recortar la sección de prompt para imagen (puede estar en inglés)
+    prompt_markers = [
+        "🎨 PROMPT PARA IMAGEN DEL PLATO",
+        "PROMPT PARA IMAGEN DEL PLATO",
+        "🎨 PROMPT PARA IMAGEN",
+        "PROMPT PARA IMAGEN",
+    ]
+    cuerpo = texto
+    for marker in prompt_markers:
+        idx = cuerpo.find(marker)
+        if idx != -1:
+            cuerpo = cuerpo[:idx]
+            break
+
+    # Tokenizar: solo palabras de 2+ letras en alfabeto latino
+    palabras = re.findall(r'\b[a-záéíóúñü]{2,}\b', cuerpo.lower())
+    if len(palabras) < 10:
+        return True  # muestra muy pequeña, asumimos OK
+
+    inglesas = sum(1 for p in palabras if p in _PALABRAS_GATILLO_INGLES)
+    ratio = inglesas / len(palabras)
+
+    return ratio < 0.08
+
+
 # --- Llamada a la API --------------------------------------------------------
 
-def call_minimax(system_prompt: str, user_prompt: str) -> str:
+def call_minimax(system_prompt: str, user_prompt: str, force_spanish: bool = True) -> str:
     """
     Llama a la API de MiniMax en modo OpenAI-compatible.
     
@@ -134,23 +180,67 @@ def call_minimax(system_prompt: str, user_prompt: str) -> str:
         "max_tokens": 1500,
     }
 
+    current_user_prompt = user_prompt
+    current_temp = 0.8
+    total_attempts = MAX_RETRIES + LANGUAGE_RETRIES
     last_error: Optional[Exception] = None
-    for attempt in range(1, MAX_RETRIES + 1):
+    language_failures = 0
+
+    for attempt in range(1, total_attempts + 1):
+        payload["messages"][1]["content"] = current_user_prompt
+        payload["temperature"] = current_temp
+
         try:
             with httpx.Client(timeout=REQUEST_TIMEOUT) as client:
                 response = client.post(url, headers=headers, json=payload)
                 response.raise_for_status()
                 data = response.json()
-                
-                # Parseo compatible con formato OpenAI:
-                return data["choices"][0]["message"]["content"]
+                content = data["choices"][0]["message"]["content"]
+
+                # Validación de idioma (solo si force_spanish=True)
+                if force_spanish and not _es_principalmente_espanol(content):
+                    language_failures += 1
+                    if language_failures <= LANGUAGE_RETRIES:
+                        print(
+                            f"  [idioma] respuesta en inglés detectada "
+                            f"(intento {language_failures}/{LANGUAGE_RETRIES}), "
+                            f"reintentando con instrucción reforzada...",
+                            file=sys.stderr,
+                        )
+                        # Reforzar instrucción de idioma y bajar temperatura
+                        current_user_prompt = current_user_prompt + (
+                            "\n\n---\n\n"
+                            "⚠️⚠️⚠️ AVISO URGENTE PARA EL MODELO ⚠️⚠️⚠️\n"
+                            "Tu respuesta anterior estaba en inglés. "
+                            "ESTO ES UN ERROR GRAVE.\n"
+                            "Debes responder ÍNTEGRAMENTE en CASTELLANO (español). "
+                            "La única sección que admite inglés es "
+                            "el PROMPT PARA IMAGEN DEL PLATO al final.\n"
+                            "Reescribe TODO el cuerpo de la ficha en español. "
+                            "No mezcles idiomas. Solo castellano."
+                        )
+                        current_temp = 0.2
+                        continue
+                    else:
+                        # Agotados los reintentos de idioma: devolvemos igual
+                        # pero loggeamos el warning
+                        print(
+                            f"  [idioma] ⚠️ agotados {LANGUAGE_RETRIES} reintentos, "
+                            f"devolviendo respuesta mixta (español+inglés)",
+                            file=sys.stderr,
+                        )
+
+                return content
+
         except (httpx.HTTPError, KeyError, ValueError) as e:
             last_error = e
-            if attempt < MAX_RETRIES:
-                print(f"  [retry {attempt}/{MAX_RETRIES}] Error: {e}", file=sys.stderr)
+            if attempt < total_attempts:
+                print(f"  [retry {attempt}/{total_attempts}] Error: {e}", file=sys.stderr)
             continue
-    
-    raise RuntimeError(f"Falló la llamada a MiniMax tras {MAX_RETRIES} intentos: {last_error}")
+
+    raise RuntimeError(
+        f"Falló la llamada a MiniMax tras {total_attempts} intentos: {last_error}"
+    )
 
 
 # --- Validación de estacionalidad --------------------------------------------
