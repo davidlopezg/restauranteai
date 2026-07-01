@@ -165,6 +165,35 @@ with gr.Blocks() as demo:
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
+    # Bootstrap del contexto compartido del restaurante.
+    # En un entorno interactivo (TTY local), pregunta.
+    # En HF Spaces (sin TTY), genera archivos vacíos con warning.
+    from agents.knowledge_context import (
+        bootstrap_necesario,
+        cargar_restaurante,
+        guardar_restaurante,
+        guardar_catalogo,
+    )
+    from agents.init_phase import _schema_doc_restaurante, _schema_doc_catalogo
+
+    if bootstrap_necesario():
+        if sys.stdin.isatty():
+            from agents.init_phase import fase_init_interactiva
+            fase_init_interactiva()
+        else:
+            # HF Space o CI: sin TTY. Generamos vacíos + warning.
+            logger.warning(
+                "Knowledge base no inicializada. "
+                "Para personalizarla, corré localmente: python -m agents.init_phase"
+            )
+            guardar_restaurante({}, _schema_doc_restaurante())
+            guardar_catalogo([], _schema_doc_catalogo())
+            logger.info("Archivos vacíos generados automáticamente.")
+
+    # Carga del contexto (ya disponible para todos los agentes)
+    restaurante = cargar_restaurante()
+    logger.info(f"Restaurante cargado: {restaurante.get('nombre', '(sin nombre)')}")
+
     demo.launch(
         server_name="0.0.0.0",
         server_port=7860,

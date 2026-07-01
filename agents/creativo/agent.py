@@ -232,12 +232,21 @@ def generar_ficha(peticion: str) -> str:
 
 def modo_interactivo():
     """Modo interactivo por línea de comandos."""
+    # Bootstrap del contexto compartido del restaurante.
+    # Si faltan los archivos, hace las preguntas automáticamente.
+    from agents.knowledge_context import ensure_initialized, cargar_restaurante, cargar_catalogo
+    if ensure_initialized():
+        print("(A partir de ahora, el agente conoce tu restaurante y catálogo.)\n")
+
     print("=" * 60)
     print("🍂 Chef Creativo — Modo Interactivo")
     print("=" * 60)
+    rest = cargar_restaurante()
+    if rest.get("nombre"):
+        print(f"Restaurante: {rest.get('nombre')}")
     print("Escribí tu petición culinaria y presioná Enter.")
     print("Escribí 'salir' para terminar.\n")
-    
+
     while True:
         try:
             peticion = input("➤ ").strip()
