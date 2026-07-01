@@ -283,6 +283,14 @@ python_version: '3.11'
 - Decidir si extender el patrón a otras dimensiones que puedan crecer (ej: catálogo de ingredientes, productores locales de Cataluña).
 - Auditoría rápida: ¿algún consumidor de `restaurante.json` asume lista cerrada? (Búsqueda inicial: `system_chef.md` no lo hace — usa los datos como contexto cualitativo).
 
+### 2026-07-01 — Iteración system prompt: métodos creativos de elBulli
+
+**Integrados los 17 métodos creativos de elBulli en `system_chef.md`:**
+- Nueva sección "Tu caja de herramientas creativas" con la metodología completa.
+- Métodos: lo autóctono, influencias externas, búsqueda técnico-conceptual, los sentidos, el sexto sentido, simbiosis dulce/salado, productos comerciales, nueva manera de servir, cambios en estructura, asociación, inspiración, adaptación, deconstrucción, minimalismo, búsqueda de nuevos productos, sinergia.
+- El chef los usa como lentes creativos internos, sin nombrarlos explícitamente en la ficha.
+- Fuente: `docs/metodos-creativos.md` (aportado por David).
+
 ### 2026-07-01 — Fix estructural de idioma + Landing Page (MVP-1)
 
 **Fix de idioma implementado en `agents/creativo/agent.py`:**
