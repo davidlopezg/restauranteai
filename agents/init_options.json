@@ -1,0 +1,102 @@
+{
+  "_meta": {
+    "version": "1.1",
+    "descripcion": "Opciones externalizadas para PREGUNTAS_RESTAURANTE en init_phase.py. Editá este archivo para agregar/quitar opciones sin tocar código. Si una pregunta tiene 'options' acá, GANA sobre las del código. Si no, el código sigue funcionando como fallback. Recordá: los consumidores (chef, marketing, etc.) asumen valores cerrados en algunos lugares — revisá antes de renombrar.",
+    "como_extender": "Para agregar una opción: agregá el string al array 'values' de la key correspondiente. El sistema ofrece automáticamente 'otra (escribir)' al final de cada choice/multichoice, así que también podés dejar que el usuario escriba lo que quiera en tiempo de init.",
+    "formato_value": "Usá snake_case en minúsculas (ej: 'horno_piedra', 'sin_gluten'). Esto permite comparar con `in` y mantener consistencia con los valores existentes."
+  },
+  "options": {
+    "sofisticacion": {
+      "type": "choice",
+      "values": ["muy_alta", "alta", "media", "baja", "muy_baja"]
+    },
+    "grupos": {
+      "type": "choice",
+      "values": ["sin_grupos", "con_grupos_pequenos", "con_grupos_grandes", "banquetes_eventos"]
+    },
+    "localizacion": {
+      "type": "choice",
+      "values": ["urbana", "rural", "litoral_mar", "montana", "singular_edificio_historico"]
+    },
+    "tiempo_preparacion": {
+      "type": "choice",
+      "values": ["comida_rapida", "medio", "slow_food"]
+    },
+    "origen_inspiracion": {
+      "type": "choice",
+      "values": [
+        "local_pueblo",
+        "regional_provincia",
+        "nacional_pais",
+        "mediterraneo",
+        "latinoamericano",
+        "asiatico",
+        "norte_europeo",
+        "frances_gourmet",
+        "internacional_fusion"
+      ]
+    },
+    "productos_dominantes": {
+      "type": "multichoice",
+      "values": [
+        "vegetales", "carne", "pescado", "mariscos",
+        "integrales", "lacteos", "fermentados", "fruta",
+        "legumbres", "cereales_granos", "setas",
+        "embutidos", "quesos_curados", "conservas",
+        "hierbas_aromaticas", "frutos_secos", "productos_mar_especificos"
+      ]
+    },
+    "tecnicas_dominantes": {
+      "type": "multichoice",
+      "values": [
+        "brasas", "arroces", "ahumado", "fermentacion",
+        "crudo", "baja_temperatura", "fritura", "guisos",
+        "plancha", "horno_leña", "vapor", "salazon",
+        "horno_piedra", "masa_larga_fermentacion",
+        "coccion_lenta_salsas", "reposteria", "marinados"
+      ]
+    },
+    "tipo_servicio": {
+      "type": "multichoice",
+      "values": [
+        "servicio_tradicional", "barra", "autoservicio",
+        "take_away", "delivery", "catering_eventos",
+        "picoteo_terraza", "vermut_dominguero",
+        "menu_diario_ejecutivo", "delivery_propio"
+      ]
+    },
+    "clases_comedores": {
+      "type": "multichoice",
+      "values": [
+        "privados_vip", "sociales_familia", "mixto",
+        "business", "turistas",
+        "jovenes_nocturno", "grupos_amigos_grandes"
+      ]
+    },
+    "orientacion_nutricional": {
+      "type": "multichoice",
+      "values": [
+        "ninguna", "origen_producto", "vegetariana", "vegana",
+        "sin_gluten", "baja_azucar", "baja_sal",
+        "ecologica_bio", "km0", "temporada"
+      ]
+    },
+    "religion": {
+      "type": "multichoice",
+      "values": [
+        "ninguna", "musulmana_halal", "judia_kosher",
+        "hindu_vegetariana", "budista"
+      ]
+    },
+    "epoca_estilo": {
+      "type": "multichoice",
+      "values": [
+        "medieval", "clasica_francesa", "tradicional_popular",
+        "rustica_pais", "mediterranea_moderna", "nouvelle_cuisine",
+        "autor_contemporanea", "street_food_gourmet", "casual_actual",
+        "pizzeria_tradicional_italiana", "pizzeria_contemporanea",
+        "casual_mediterraneo"
+      ]
+    }
+  }
+}

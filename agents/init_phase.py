@@ -15,10 +15,56 @@ point de cada agente (modo_interactivo() para CLI, __main__ para app.py).
 
 from __future__ import annotations
 
+import json
+from pathlib import Path
+
 from agents.knowledge_context import (
     RESTAURANTE_PATH,
     CATALOGO_PATH,
 )
+
+
+# ╔══════════════════════════════════════════════════════════════════════════════╗
+# ║  OPCIONES EXTERNALIZADAS — cargar desde init_options.json                 ║
+# ╚══════════════════════════════════════════════════════════════════════════════╝
+#
+# Si una pregunta tiene su key en _OPCIONES_EXT, sus opciones vienen del JSON
+# (fuente de verdad). Si no, fallback a las opciones hardcoded en el código.
+# Esto permite extender/agregar opciones sin tocar init_phase.py.
+
+_OPTIONS_PATH = Path(__file__).parent / "init_options.json"
+
+# Sufijo que se ofrece automáticamente al final de cada choice/multichoice.
+# Si el usuario lo elige, se le pide input libre y se agrega al resultado.
+OTRO_LITERAL = "__otra__"
+SUFIJO_OTRA = "otra (escribir)"
+
+
+def _cargar_opciones_externas() -> dict:
+    """Carga las opciones externalizadas desde init_options.json.
+    Devuelve dict {key_pregunta: {"type": ..., "values": [...]}}.
+    Si el archivo no existe o está malformado, devuelve {} (fallback a código).
+    """
+    if not _OPTIONS_PATH.exists():
+        return {}
+    try:
+        with _OPTIONS_PATH.open(encoding="utf-8") as f:
+            data = json.load(f)
+        return data.get("options", {})
+    except (json.JSONDecodeError, OSError) as e:
+        print(f"⚠️  No se pudo cargar init_options.json: {e}")
+        print("   Se usan las opciones hardcoded en el código como fallback.")
+        return {}
+
+
+_OPCIONES_EXT: dict = _cargar_opciones_externas()
+
+
+def _opciones_para(key: str, fallback: list[str] | None = None) -> list[str]:
+    """Devuelve las opciones para una pregunta: del JSON si existen, sino del código."""
+    if key in _OPCIONES_EXT:
+        return list(_OPCIONES_EXT[key].get("values", []))
+    return list(fallback or [])
 
 
 # ╔══════════════════════════════════════════════════════════════════════════════╗
@@ -243,43 +289,90 @@ def _input_number(prompt: str, help_text: str | None = None) -> float:
 
 
 def _input_choice(prompt: str, options: list[str], help_text: str | None = None) -> str:
-    """Elige UNO de N opciones numeradas."""
+    """Elige UNO de N opciones numeradas. Última opción = 'otra (escribir)' para input libre."""
     print(f"\n➤ {prompt}")
     if help_text:
         print(f"   ({help_text})")
     for i, opt in enumerate(options, 1):
         print(f"   {i}. {opt}")
+    otra_idx = len(options) + 1
+    print(f"   {otra_idx}. {SUFIJO_OTRA}")
     while True:
-        r = input(f"   Elige 1-{len(options)} > ").strip()
-        if r.isdigit() and 1 <= int(r) <= len(options):
-            return options[int(r) - 1]
-        print(f"   (elegí un número entre 1 y {len(options)})")
+        r = input(f"   Elige 1-{otra_idx} > ").strip()
+        if r.isdigit() and 1 <= int(r) <= otra_idx:
+            idx = int(r)
+            if idx <= len(options):
+                return options[idx - 1]
+            # Eligió 'otra': pedir input libre
+            custom = input("   Escribí tu opción > ").strip()
+            if custom:
+                return custom
+            print("   (opción vacía, volvé a elegir)")
+        else:
+            print(f"   (elegí un número entre 1 y {otra_idx})")
 
 
 def _input_multichoice(prompt: str, options: list[str], help_text: str | None = None) -> list[str]:
-    """Elige VARIOS de N opciones, separadas por coma. Vacío = []."""
+    """Elige VARIOS de N opciones. Última opción = 'otra (escribir)' para agregar customs.
+    Si la lista numerada contiene la opción 'otra', se pide texto libre y se suma al resultado.
+    Vacío = [].
+    """
     print(f"\n➤ {prompt}")
     if help_text:
         print(f"   ({help_text})")
     for i, opt in enumerate(options, 1):
         print(f"   {i}. {opt}")
-    print("   (separá los números con coma, ej: 1,3,5 — vacío = ninguno)")
+    otra_idx = len(options) + 1
+    print(f"   {otra_idx}. {SUFIJO_OTRA}")
+    print(f"   (separá los números con coma, ej: 1,3,5 — vacío = ninguno)")
     while True:
         r = input("   > ").strip()
         if not r:
             return []
         partes = [p.strip() for p in r.split(",") if p.strip()]
-        if all(p.isdigit() and 1 <= int(p) <= len(options) for p in partes):
-            indices_unicos = sorted(set(int(p) for p in partes))
-            return [options[i - 1] for i in indices_unicos]
-        print("   (formato: 1,3,5 — números válidos separados por coma)")
+        if not partes:
+            return []
+        nums = []
+        invalido = False
+        for p in partes:
+            if not p.isdigit():
+                invalido = True
+                break
+            n = int(p)
+            if n < 1 or n > otra_idx:
+                invalido = True
+                break
+            nums.append(n)
+        if invalido:
+            print(f"   (formato: 1,3,5 — números válidos (1 a {otra_idx}) separados por coma)")
+            continue
+        nums_unicos = sorted(set(nums))
+        # ¿Eligió 'otra'?
+        if otra_idx in nums_unicos:
+            nums_unicos.remove(otra_idx)
+            seleccion_numerada = [options[i - 1] for i in nums_unicos]
+            custom_raw = input(
+                "   Escribí tu/s opción/es custom (varias separadas por coma) > "
+            ).strip()
+            if custom_raw:
+                customs = [c.strip() for c in custom_raw.split(",") if c.strip()]
+                return seleccion_numerada + customs
+            # Eligió 'otra' pero no escribió nada: devolvemos solo las numeradas
+            return seleccion_numerada
+        # Sin 'otra': devolver las numeradas
+        return [options[i - 1] for i in nums_unicos]
 
 
 def _ask_question(q: dict):
-    """Dispatcher: ejecuta una pregunta según su type y devuelve el valor."""
+    """Dispatcher: ejecuta una pregunta según su type y devuelve el valor.
+    Las options se resuelven desde init_options.json si la key está ahí,
+    sino se usan las hardcoded en el código (fallback).
+    """
     qtype = q["type"]
-    options = q.get("options", [])
     help_text = q.get("help")
+
+    # Resolver opciones: del JSON externo si la key está, sino del código.
+    options = _opciones_para(q["key"], q.get("options", []))
 
     if qtype == "text":
         return _input_text(q["prompt"], help_text, allow_empty=True)
@@ -391,6 +484,23 @@ en `agents/init_phase.py` para la lista cerrada). Tipos de valor:
 | `religion` | multichoice | ninguna / musulmana_halal / judia_kosher / hindu_vegetariana / budista |
 | `tiempo_preparacion` | choice | comida_rapida / medio / slow_food |
 | `epoca_estilo` | multichoice | mediterranea_moderna, autor_contemporanea, tradicional_popular, ... |
+
+## Cómo extender las opciones
+
+Las opciones de cada pregunta `choice` / `multichoice` viven en
+`agents/init_options.json`. Si una pregunta tiene su key en ese archivo,
+sus opciones GANA sobre las hardcoded en `init_phase.py`. Si no, el código
+sigue funcionando como fallback.
+
+Para agregar una opción nueva (ej: `horno_piedra` en técnicas dominantes):
+
+1. Editá `agents/init_options.json`
+2. Agregá el string en snake_case al array `values` de la key correspondiente
+3. Commit + push
+
+Adicionalmente, en tiempo de init el sistema ofrece automáticamente la opción
+**"otra (escribir)"** al final de cada choice/multichoice. Si el usuario la elige,
+se le pide input libre y se guarda como string custom.
 
 ## Ubicación física
 

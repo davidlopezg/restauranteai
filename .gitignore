@@ -33,3 +33,6 @@ output/
 
 # Archivos huérfanos de pegados multilinea accidentales
 =*
+
+# Conocimiento específico del restaurante (generado en fase init, NO commitear)
+.agent_knowledge/

@@ -259,6 +259,28 @@ python_version: '3.11'
 - MVP-0 probado por David: ⏳
 - MVP-0.5 (HF Space público): ⏳
 
+### 2026-07-01 — Decisión de arquitectura: opciones del init externalizadas a JSON + fallback "otra (escribir)"
+
+**Contexto:** David notó que las listas `options` de las preguntas del `init_phase.py` eran cerradas (no se podían extender sin tocar código). Para una pizzería mediterránea catalana faltaban opciones críticas como `horno_piedra`, `pizzeria_tradicional_italiana`, `embutidos`, `quesos_curados`, `conservas`, `hierbas_aromaticas`.
+
+**Decisión tomada:**
+1. Crear `agents/init_options.json` con las opciones externalizadas. **El JSON es la fuente de verdad** cuando la key está presente. Si no, fallback a las hardcoded en el código (no rompe nada durante la migración gradual).
+2. Ofrecer automáticamente la opción **"otra (escribir)"** al final de cada choice/multichoice en el CLI, que pide input libre y se guarda como string custom.
+3. NO tocar HF Space: el init interactivo solo corre con TTY (local). En HF se generan archivos vacíos como siempre.
+
+**Implicaciones para futuros agentes:**
+- Cualquier agente que asuma "lista cerrada" en estas dimensiones (ej: el chef que hace `if data["sofisticacion"] == "alta"`) **debe** tratar valores custom como caso abierto.
+- El patrón "JSON editable + fallback libre" se puede replicar a otras dimensiones (catálogo de ingredientes, maridajes, técnicas específicas) sin modificar este código.
+- Tests: 9/9 pasaron (choice normal/custom/vacío, multichoice normal/vacío/con otras/inputs inválidos, dispatch de _ask_question).
+
+**Archivos tocados:**
+- `agents/init_options.json` (NUEVO, ~3.8 KB)
+- `agents/init_phase.py` (4 edits: loader, _input_choice, _input_multichoice, _ask_question, schema doc)
+
+**Pendiente / próximo opcional:**
+- Decidir si extender el patrón a otras dimensiones que puedan crecer (ej: catálogo de ingredientes, productores locales de Cataluña).
+- Auditoría rápida: ¿algún consumidor de `restaurante.json` asume lista cerrada? (Búsqueda inicial: `system_chef.md` no lo hace — usa los datos como contexto cualitativo).
+
 ## Datos del usuario (David)
 
 - Hostelero real, Sol de Nit (pizzería en Cataluña).
