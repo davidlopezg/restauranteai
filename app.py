@@ -58,23 +58,23 @@ logger.info("Chef Creativo — recursos cargados correctamente")
 # Lógica del chat
 # ---------------------------------------------------------------------------
 
-def responder(mensaje: str, historial: list) -> str:
+def responder(mensaje: str, historial: list) -> dict:
     """
     Procesa una petición del usuario y devuelve la ficha del chef.
 
-    Firma compatible con gr.ChatInterface de Gradio 5+:
-        fn(mensaje: str, historial: list) -> str
+    Firma compatible con gr.ChatInterface de Gradio 5+ en formato 'messages':
+        fn(mensaje: str, historial: list) -> dict con {role, content}
 
     Args:
         mensaje: texto crudo que escribió el usuario.
         historial: lista de mensajes previos (formato messages API).
 
     Returns:
-        La respuesta del chef como string.
+        Dict con la respuesta del chef en formato messages.
     """
     mensaje = (mensaje or "").strip()
     if not mensaje:
-        return ""
+        return {"role": "assistant", "content": ""}
 
     timestamp = datetime.now().strftime("%H:%M:%S")
     logger.info(f"[{timestamp}] Nueva petición (len={len(mensaje)})")
@@ -91,19 +91,20 @@ def responder(mensaje: str, historial: list) -> str:
 
         user_message = mensaje + contexto_adicional
         respuesta = call_minimax(SYSTEM_PROMPT, user_message)
-        return respuesta
+        return {"role": "assistant", "content": respuesta}
 
     except Exception as e:
         # NO loggear el valor de la key. Solo el tipo + mensaje truncado.
         tipo = type(e).__name__
         logger.error(f"[{timestamp}] Error procesando petición: {tipo}")
-        return (
-            f"❌ Error ({tipo}). "
-            f"Detalle: {str(e)[:200]}\n\n"
-            f"Si este error persiste, puede ser:\n"
-            f"- API key inválida o sin saldo\n"
-            f"- Timeout de la API (reintentar en unos segundos)"
-        )
+        return {
+            "role": "assistant",
+            "content": (
+                f"❌ Error ({tipo}). "
+                f"Detalle: {str(e)[:200]}\n\n"
+                f"Si persiste: API key inválida o sin saldo, o timeout de la API."
+            ),
+        }
 
 
 # ---------------------------------------------------------------------------
