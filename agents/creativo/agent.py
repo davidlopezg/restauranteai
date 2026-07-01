@@ -295,6 +295,159 @@ def check_estacionalidad(peticion: str, estacionalidad: dict) -> Optional[str]:
 
 # --- Loop principal ----------------------------------------------------------
 
+# Comandos soportados en modo proceso_creativo.
+# Estos se detectan al inicio del mensaje del usuario.
+PROCESO_COMANDOS: set[str] = {
+    "/estado", "/volver", "/ficha", "/reiniciar", "/salir",
+}
+
+
+def iniciar_proceso_creativo(peticion: str, sesion_id: str | None = None):
+    """
+    Inicia (o reanuda) una sesión del proceso creativo.
+
+    Args:
+        peticion: petición culinaria del usuario.
+        sesion_id: si se pasa, reanuda una sesión existente.
+
+    Returns:
+        Instancia de ProcesoCreativo.
+    """
+    # Import local para evitar circular import
+    from agents.creativo.proceso_creativo import ProcesoCreativo
+    if sesion_id:
+        return ProcesoCreativo(peticion="", cargar_de=sesion_id)
+    return ProcesoCreativo(peticion=peticion)
+
+
+def procesar_mensaje_proceso(sesion, mensaje: str) -> str:
+    """
+    Procesa un mensaje del usuario dentro de una sesión de proceso creativo.
+
+    Soporta:
+    - Comandos: /estado, /fase N|nombre, /volver, /ficha, /reiniciar, /salir
+    - Mensaje normal: se interpreta como input para la fase actual.
+      El chef trabaja la fase, y se marca como completa automáticamente.
+
+    Args:
+        sesion: instancia de ProcesoCreativo.
+        mensaje: texto del usuario.
+
+    Returns:
+        String con la respuesta para mostrar al usuario.
+    """
+    from agents.creativo.proceso_creativo import FASES_POR_KEY, FASES
+
+    mensaje = (mensaje or "").strip()
+    if not mensaje:
+        return ""
+
+    # Comandos
+    lower = mensaje.lower()
+
+    if lower == "/estado":
+        return sesion.resumen_estado()
+
+    if lower.startswith("/fase "):
+        arg = mensaje[6:].strip()
+        # Acepta número (1-7) o nombre de fase
+        target_key = None
+        if arg.isdigit():
+            idx = int(arg) - 1
+            if 0 <= idx < len(FASES):
+                target_key = FASES[idx]["key"]
+        elif arg in FASES_POR_KEY:
+            target_key = arg
+        if not target_key:
+            disponibles = ", ".join(f["key"] for f in FASES)
+            return f"❌ Fase '{arg}' no reconocida. Disponibles: {disponibles}"
+        sesion.ir_a_fase(target_key)
+        return (
+            f"↪️ Salté a la fase {target_key.upper()} — {FASES_POR_KEY[target_key]['nombre']}\n\n"
+            f"{sesion.resumen_estado()}"
+        )
+
+    if lower == "/volver":
+        if sesion.fase_actual_key is None:
+            return "⚠️  No hay fase activa (el proceso está completo). Usá /fase 1 para volver al inicio."
+        sesion.regenerar_fase_actual()
+        return (
+            f"↪️ Regenerando la fase {sesion.fase_actual_key.upper()}.\n\n"
+            f"{sesion.resumen_estado()}"
+        )
+
+    if lower == "/ficha" or lower.startswith("/ficha "):
+        forzar = "forzar" in lower
+        try:
+            ficha = sesion.generar_ficha_final(forzar=forzar)
+            return (
+                f"🍂 Ficha final generada.\n\n"
+                f"---\n\n"
+                f"{ficha}"
+            )
+        except ValueError as e:
+            return f"❌ {e}"
+
+    if lower == "/reiniciar":
+        sesion.reiniciar()
+        return f"↪️ Proceso reiniciado.\n\n{sesion.resumen_estado()}"
+
+    if lower == "/salir":
+        sesion.save()
+        return (
+            f"👋 Sesión guardada. Para reanudar: {sesion.sesion_id}\n\n"
+            f"{sesion.resumen_estado()}"
+        )
+
+    # Mensaje normal: trabajar la fase actual con LLM y marcarla completa
+    if sesion.fase_actual_key is None:
+        return (
+            "✅ Todas las fases están completas. Usá /ficha para generar la ficha final, "
+            "o /fase 1 para volver al inicio."
+        )
+
+    # Capturar la fase ACTUAL antes de trabajar (porque después puede ser None)
+    fase_trabajada = sesion.fase_actual
+
+    # Aviso de estacionalidad como contexto (igual que en ficha normal)
+    estacionalidad = load_estacionalidad()
+    aviso = check_estacionalidad(mensaje, estacionalidad)
+    contexto_adicional = ""
+    if aviso:
+        contexto_adicional = (
+            f"\n\n[CONTEXTO PARA TI — NO INCLUIR EN LA SALIDA]: {aviso}"
+        )
+
+    # Generar contenido de la fase con LLM
+    contenido = sesion.trabajar_fase_actual()
+
+    # Marcar completa y avanzar
+    sesion.marcar_fase_completa(contenido)
+
+    # Preparar respuesta al usuario
+    if sesion.fase_actual_key is None:
+        # Llegamos al final: todas completas
+        return (
+            f"✓ Fase {fase_trabajada['orden']} ({fase_trabajada['nombre']}) completada:\n\n"
+            f"{contenido}\n\n"
+            f"---\n\n"
+            f"🎉 ¡Todas las fases completas! Usá `/ficha` para generar la ficha final."
+        )
+
+    prox_fase = sesion.fase_actual  # después de avanzar
+    return (
+        f"✓ Fase {fase_trabajada['orden']} ({fase_trabajada['nombre']}) completada:\n\n"
+        f"{contenido}\n\n"
+        f"---\n\n"
+        f"▶ Siguiente: Fase {prox_fase['orden']} — {prox_fase['nombre']}\n\n"
+        f"Seguí trabajando, o usá:\n"
+        f"- `/estado` — ver progreso\n"
+        f"- `/volver` — regenerar esta fase\n"
+        f"- `/fase N` — saltar a otra fase\n"
+        f"- `/ficha` — generar ficha final (cuando estén todas completas)"
+    )
+
+
 def generar_ficha(peticion: str, skill_key: str = "ficha") -> str:
     """
     Genera la respuesta del chef usando la skill indicada.

@@ -39,6 +39,8 @@ from agents.creativo.agent import (
     load_estacionalidad,
     check_estacionalidad,
     call_minimax,
+    iniciar_proceso_creativo,
+    procesar_mensaje_proceso,
 )
 from agents.creativo.skills import (
     list_skills,
@@ -67,6 +69,14 @@ logger.info("Chef Creativo — recursos cargados correctamente")
 # Cache de prompts por skill para evitar releer el .md en cada request
 _SKILL_PROMPTS: dict[str, str] = {}
 
+# Sesión activa del proceso creativo (state machine persistente).
+# En Gradio, los request pueden venir de distintos workers, así que
+# mantenemos un dict {thread_id: sesion}. Como hf-space corre single-process
+# por default, alcanza con una variable global para la UI.
+from threading import Lock
+_SESION_PC = None  # type: ignore[var-annotated]
+_SESION_PC_LOCK = Lock()
+
 
 def _get_skill_prompt(skill_key: str) -> str:
     """Carga y cachea el system prompt de la skill."""
@@ -81,7 +91,7 @@ def _get_skill_prompt(skill_key: str) -> str:
 
 def responder(mensaje: str, historial: list, skill: str = "ficha") -> dict:
     """
-    Procesa una petición del usuario y devuelve la ficha del chef.
+    Procesa una petición del usuario y devuelve la respuesta del chef.
 
     Firma compatible con gr.ChatInterface de Gradio 5+ en formato 'messages':
         fn(mensaje: str, historial: list, skill: str) -> dict con {role, content}
@@ -101,21 +111,24 @@ def responder(mensaje: str, historial: list, skill: str = "ficha") -> dict:
     timestamp = datetime.now().strftime("%H:%M:%S")
     logger.info(f"[{timestamp}] Nueva petición (skill={skill}, len={len(mensaje)})")
 
-    system_prompt = _get_skill_prompt(skill)
+    # ────────────────────────────────────────────────────────────────────
+    # Skill "proceso_creativo": state machine por sesión
+    # ────────────────────────────────────────────────────────────────────
+    if skill == "proceso_creativo":
+        return _responder_proceso_creativo(mensaje)
 
+    # ────────────────────────────────────────────────────────────────────
+    # Skill "ficha" (default): flujo clásico
+    # ────────────────────────────────────────────────────────────────────
+    system_prompt = _get_skill_prompt(skill)
     try:
-        # Inyectamos el aviso de estacionalidad como contexto privado al chef.
-        # El usuario lo ve solo si el chef decide mencionarlo en su ficha.
         aviso = check_estacionalidad(mensaje, ESTACIONALIDAD)
         contexto_adicional = ""
         if aviso:
             contexto_adicional = (
                 f"\n\n[CONTEXTO PRIVADO — NO INCLUIR EN LA SALIDA]: {aviso}"
             )
-
         user_message = mensaje + contexto_adicional
-
-        # 🚨 RECORDATORIO FINAL DE IDIOMA — posicionalmente es lo que más autoridad tiene.
         instruccion_idioma = (
             "\n\n---\n\n"
             "⚠️ RECORDATORIO FINAL ⚠️\n"
@@ -124,12 +137,9 @@ def responder(mensaje: str, historial: list, skill: str = "ficha") -> dict:
             "Prohibido: ingl\u00e9s, franc\u00e9s, cir\u00edlico, hanzi, kanji. Solo alfabeto latino."
         )
         user_message = user_message + instruccion_idioma
-
         respuesta = call_minimax(system_prompt, user_message)
         return {"role": "assistant", "content": respuesta}
-
     except Exception as e:
-        # NO loggear el valor de la key. Solo el tipo + mensaje truncado.
         tipo = type(e).__name__
         logger.error(f"[{timestamp}] Error procesando petición: {tipo}")
         return {
@@ -139,6 +149,78 @@ def responder(mensaje: str, historial: list, skill: str = "ficha") -> dict:
                 f"Detalle: {str(e)[:200]}\n\n"
                 f"Si persiste: API key inválida o sin saldo, o timeout de la API."
             ),
+        }
+
+
+def _responder_proceso_creativo(mensaje: str) -> dict:
+    """
+    Handler de la skill 'proceso_creativo' con state machine persistente.
+
+    Maneja:
+    - Comandos (/estado, /fase N, /volver, /ficha, /reiniciar, /salir)
+    - Mensajes normales: trabaja la fase actual con LLM y avanza
+    """
+    global _SESION_PC
+    timestamp = datetime.now().strftime("%H:%M:%S")
+
+    # Comandos que NO requieren sesión activa
+    if mensaje.strip().lower() == "/nueva":
+        with _SESION_PC_LOCK:
+            _SESION_PC = None
+        return {
+            "role": "assistant",
+            "content": "↪️ Listo. La próxima petición iniciará una nueva sesión."
+        }
+
+    if mensaje.strip().lower() == "/sesiones":
+        from agents.creativo.proceso_creativo import listar_sesiones_activas
+        sesiones = listar_sesiones_activas()
+        if not sesiones:
+            return {"role": "assistant", "content": "No hay sesiones guardadas."}
+        lineas = ["Sesiones guardadas (última actualización primero):\n"]
+        for s in sesiones[:10]:
+            estado = "✓" if s.get("completa") else "▶"
+            lineas.append(f"  {estado} {s['sesion_id']} — {s['peticion'][:50]}")
+        return {"role": "assistant", "content": "\n".join(lineas)}
+
+    if mensaje.strip().lower().startswith("/reanudar "):
+        sesion_id = mensaje.strip()[10:].strip()
+        try:
+            with _SESION_PC_LOCK:
+                _SESION_PC = iniciar_proceso_creativo("", sesion_id=sesion_id)
+            return {
+                "role": "assistant",
+                "content": f"↪️ Sesión reanudada: {sesion_id}\n\n{_SESION_PC.resumen_estado()}"
+            }
+        except FileNotFoundError as e:
+            return {"role": "assistant", "content": f"❌ {e}"}
+
+    # Mensaje normal: usar o crear sesión
+    with _SESION_PC_LOCK:
+        if _SESION_PC is None:
+            _SESION_PC = iniciar_proceso_creativo(mensaje)
+            logger.info(f"[{timestamp}] Nueva sesión PC: {_SESION_PC.sesion_id}")
+            return {
+                "role": "assistant",
+                "content": (
+                    f"🆕 Sesión iniciada: {_SESION_PC.sesion_id}\n\n"
+                    f"{_SESION_PC.resumen_estado()}\n\n"
+                    f"Empezamos por la **Fase 1 — {_SESION_PC.fase_actual['nombre']}**. "
+                    f"Cuando me des tu petición inicial (o aceptes la de arriba), trabajo la fase."
+                )
+            }
+        sesion = _SESION_PC
+
+    # Tenemos sesión activa: procesar mensaje (puede ser comando o contenido de fase)
+    try:
+        respuesta = procesar_mensaje_proceso(sesion, mensaje)
+        return {"role": "assistant", "content": respuesta}
+    except Exception as e:
+        tipo = type(e).__name__
+        logger.error(f"[{timestamp}] Error en proceso_creativo: {tipo}")
+        return {
+            "role": "assistant",
+            "content": f"❌ Error ({tipo}): {str(e)[:200]}"
         }
 
 
