@@ -132,7 +132,6 @@ demo = gr.ChatInterface(
     fn=responder,
     title="🍂 Chef Creativo — RestaurantEAI",
     cache_examples=False,  # deshabilitar cache de ejemplos (en HF Spaces los .csv no persisten entre reinicios)
-    type="messages",  # Gradio 5+ messages API: mi responder() devuelve dict {role, content}
     description=(
         "Generador de fichas culinarias con IA. Pedime un plato en lenguaje natural "
         "y te devuelvo nombre, historia, ficha técnica, maridaje y prompt para imagen."
