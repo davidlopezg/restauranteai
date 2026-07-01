@@ -49,7 +49,27 @@
 - API key operativa: ✅ (con salvaguarda "fija/no rotable")
 - Iteración de system prompt: ⏳ (próximo paso)
 - MVP-0.5 código (app.py + Gradio): ✅ (cableado, pendiente deploy a HF)
-- MVP-0.5 deploy a HF Space: ⏳ (espera instrucciones paso a paso de David)
+- MVP-0.5 código pusheado a HF Space: ✅ (2026-07-01, conflicto resuelto vía `git pull --rebase hf main` + `git checkout --theirs README.md`)
+- MVP-0.5 deploy público verificado: ⏳ (depende de que David cargue el Secret `MINIMAX_API_KEY` y verifique arranque)
+
+### 2026-07-01 — Deploy real a HF Space (RestaurantEAI)
+- **Nombre real del Space**: `RestaurantEAI` (decidido por David en HF web), NO `restauranteia-chef` como decía `DEPLOY_HF.md`. Actualizar el doc.
+- **Remote `hf` ya estaba agregado** apuntando al Space correcto (David lo había hecho en un intento previo).
+- **Conflicto en push**: el Space tenía un commit inicial autogenerado por HF con `.gitattributes` (estándar LFS) y `README.md` con frontmatter simple (`sdk_version: 6.19.0`, `python_version: '3.13'`, emoji 🦀).
+- **Resolución aplicada**: `git pull --rebase hf main` → conflicto en README.md → resuelto con `git checkout --theirs` → `git rebase --continue` aplicó limpiamente los 2 commits locales.
+- **Decisión clave**: conservar `.gitattributes` de HF (LFS estándar, necesario), conservar **nuestro** README.md (frontmatter curado con `sdk_version: 4.44.0` alineado con `app.py`).
+- **Push final**: `992bcad..6ca675a main -> main` ✅.
+
+### 2026-07-01 — Lección técnica de git (importante para futuro)
+- Durante `git rebase`, **`--ours` y `--theirs` están invertidos** respecto a `git merge`:
+  - `--ours` = HEAD actual = la base ya aplicada
+  - `--theirs` = el commit que se está aplicando encima
+- Confusión inicial resuelta. Regla práctica: para conservar nuestra versión durante rebase, usar `--theirs`.
+
+### Próximo paso inmediato
+- David debe cargar `MINIMAX_API_KEY` en **Settings → Repository secrets** del Space `RestaurantEAI`.
+- Opcional: agregar también `MINIMAX_BASE_URL=https://api.minimax.io/v1` y `MINIMAX_MODEL=MiniMax-M3`.
+- Verificar el arranque público (HF hace build automático en 1-5 min).
 
 ### 2026-06-30 — Inicio de MVP-0.5 (HF Space con Gradio)
 

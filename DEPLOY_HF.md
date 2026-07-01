@@ -1,6 +1,7 @@
 # Despliegue en Hugging Face Spaces — Paso a paso
 
 > **Para:** David (username `davidlopezgamero`)
+> **Nombre del Space real:** `RestaurantEAI` (NO `restauranteia-chef` — corregido 2026-07-01).
 > **Objetivo:** deployar `app.py` (Gradio) en HF Spaces con la opción **A + C**: Secret cifrado + Space con link privado.
 > **Tiempo estimado total:** 20-40 minutos la primera vez.
 
@@ -14,6 +15,10 @@
 - [ ] Git inicializado y al menos un commit (el repo tiene que ser "pusheable")
 
 ---
+
+## ✅ Estado del doc
+
+> **Actualizado 2026-07-01**: este doc se redactó asumiendo un Space de nombre `restauranteia-chef`, pero David terminó creando el Space con el nombre `RestaurantEAI`. Si volvés a deployar desde cero, ajustá el nombre al que corresponda. El doc sigue siendo válido conceptualmente; los nombres exactos pueden variar.
 
 ## 📦 Paso 1 — Inicializar git y hacer el primer commit (si no lo hiciste)
 
@@ -35,7 +40,7 @@ git commit -m "MVP-0.5: agente Chef Creativo + UI Gradio"
 1. Ir a https://huggingface.co/new-space
 2. Completar el formulario:
    - **Owner:** `davidlopezgamero`
-   - **Space name:** `restauranteia-chef` (o el nombre que quieras, sin espacios ni mayúsculas raras)
+   - **Space name:** `RestaurantEAI` (o el nombre que quieras, sin espacios — **ojo, NO** `restauranteia-chef`, ese nombre ya quedó viejo)
    - **License:** MIT
    - **SDK:** Gradio
    - **Space hardware:** CPU basic (gratis) — suficiente para empezar
@@ -87,6 +92,18 @@ git push hf main
 > 2. Hacer `git push hf main --force` (con cuidado).
 >
 > O pedirle a HF que use la rama que vos quieras desde el panel del Space.
+>
+> **Caso real registrado (2026-07-01):** HF crea un commit inicial en `main` con `.gitattributes` y `README.md` mínimo. El push directo es rechazado (`non-fast-forward`). Solución segura aplicada:
+>
+> ```bash
+> git pull --rebase hf main
+> # Conflicto esperado en README.md; resolver con:
+> git checkout --theirs README.md    # durante rebase, --theirs = nuestra versión
+> git add README.md
+> git rebase --continue
+> git push hf main
+> ```
+> Conserva el `.gitattributes` de HF (estándar LFS) y descarta el `README.md` autogenerado a favor del nuestro.
 
 **Opción B — Desde la UI web de HF:**
 
@@ -100,7 +117,7 @@ git push hf main
 
 1. Después del push, HF automáticamente empieza a construir el Space. Vas a ver logs en la pestaña **Logs**.
 2. Esperá a que diga algo como *"Application startup complete"* (tarda 1-5 minutos la primera vez, porque instala dependencias).
-3. Cuando esté listo, entrá a la **App** del Space (botón arriba a derecha o URL `https://huggingface.co/spaces/davidlopezgamero/restauranteia-chef`).
+3. Cuando esté listo, entrá a la **App** del Space (botón arriba a derecha o URL `https://huggingface.co/spaces/davidlopezgamero/RestaurantEAI`).
 4. Escribí una petición chiquita de prueba: *"Entrante vegetariano con calabaza y queso de cabra"*
 5. Si responde con la ficha estructurada → **MVP-0.5 deployado ✅**
 
