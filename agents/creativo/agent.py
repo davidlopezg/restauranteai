@@ -586,6 +586,14 @@ def check_estacionalidad(peticion: str, estacionalidad: dict) -> Optional[str]:
 # Estos se detectan al inicio del mensaje del usuario.
 PROCESO_COMANDOS: set[str] = {
     "/estado", "/volver", "/ficha", "/reiniciar", "/salir",
+    # Archivo de Ideas (PR 3)
+    "/guardar", "/guardar ",
+    "/ideas", "/ideas ",
+    "/editar",
+    "/olvidar", "/olvidar ",
+    "/export-ideas",
+    "/silenciar-contador",
+    "/ayuda",
 }
 
 
@@ -1081,6 +1089,7 @@ def _loop_ficha(skills: list[dict]) -> str | None:
     print("  salir         — terminar\n")
 
     skill_key = "ficha"
+    ultimo_assistant = None  # track last assistant response
     while True:
         try:
             peticion = input("➤ ").strip()
@@ -1100,9 +1109,30 @@ def _loop_ficha(skills: list[dict]) -> str | None:
         if nueva == skill_key:
             continue  # comando procesado, misma skill, seguir
 
+        # ── ARCHIVO DE IDEAS: transversal command dispatch ──
+        try:
+            from agents.memoria.commands import handle_command
+            from agents.memoria.storage import init_db
+            conn = init_db()
+            try:
+                cmd_result = handle_command(
+                    peticion, ultimo_assistant, skill_key, conn
+                )
+            finally:
+                conn.close()
+            if cmd_result is not None:
+                print("\n" + cmd_result["content"] + "\n")
+                print("-" * 60 + "\n")
+                continue
+        except Exception as e:
+            print(f"\n⚠️ Error en archivo de ideas: {e}\n")
+            continue
+        # ── end ARCHIVO DE IDEAS ──
+
         try:
             ficha = generar_ficha(peticion, skill_key=skill_key)
             print("\n" + ficha + "\n")
+            ultimo_assistant = ficha  # track for /guardar
             print("-" * 60 + "\n")
         except Exception as e:
             print(f"\n❌ Error: {e}\n", file=sys.stderr)
@@ -1150,6 +1180,7 @@ def _loop_proceso_creativo(skills: list[dict], sesion_inicial=None) -> str | Non
         print(sesion.resumen_estado())
         print()
 
+    ultimo_assistant = None  # track last assistant response
     while True:
         try:
             mensaje = input("➤ ").strip()
@@ -1176,6 +1207,26 @@ def _loop_proceso_creativo(skills: list[dict], sesion_inicial=None) -> str | Non
             return nueva
         if nueva == "proceso_creativo":
             continue
+
+        # ── ARCHIVO DE IDEAS: transversal command dispatch ──
+        try:
+            from agents.memoria.commands import handle_command
+            from agents.memoria.storage import init_db
+            conn = init_db()
+            try:
+                cmd_result = handle_command(
+                    mensaje, ultimo_assistant, "proceso_creativo", conn
+                )
+            finally:
+                conn.close()
+            if cmd_result is not None:
+                print("\n" + cmd_result["content"] + "\n")
+                print("-" * 60 + "\n")
+                continue
+        except Exception as e:
+            print(f"\n⚠️ Error en archivo de ideas: {e}\n")
+            continue
+        # ── end ARCHIVO DE IDEAS ──
 
         # Comandos especiales del proceso creativo
         lower = mensaje.lower()
@@ -1219,6 +1270,7 @@ def _loop_proceso_creativo(skills: list[dict], sesion_inicial=None) -> str | Non
             print()
             print(respuesta)
             print()
+            ultimo_assistant = respuesta  # track for /guardar
             print("-" * 60)
             print()
         except Exception as e:
@@ -1243,6 +1295,7 @@ def _loop_ideas_creativas(skills: list[dict]) -> str | None:
     print("  salir                             — terminar")
     print()
 
+    ultimo_assistant = None  # track last assistant response
     while True:
         try:
             mensaje = input("➤ ").strip()
@@ -1262,11 +1315,32 @@ def _loop_ideas_creativas(skills: list[dict]) -> str | None:
         if nueva == "ideas_creativas":
             continue
 
+        # ── ARCHIVO DE IDEAS: transversal command dispatch ──
+        try:
+            from agents.memoria.commands import handle_command
+            from agents.memoria.storage import init_db
+            conn = init_db()
+            try:
+                cmd_result = handle_command(
+                    mensaje, ultimo_assistant, "ideas_creativas", conn
+                )
+            finally:
+                conn.close()
+            if cmd_result is not None:
+                print("\n" + cmd_result["content"] + "\n")
+                print("-" * 60 + "\n")
+                continue
+        except Exception as e:
+            print(f"\n⚠️ Error en archivo de ideas: {e}\n")
+            continue
+        # ── end ARCHIVO DE IDEAS ──
+
         try:
             respuesta = procesar_mensaje_ideas_creativas(mensaje)
             print()
             print(respuesta)
             print()
+            ultimo_assistant = respuesta  # track for /guardar
             print("-" * 60)
             print()
         except Exception as e:
@@ -1374,6 +1448,7 @@ def main():
         skills = list_skills()
         # Bucle simple: imprime respuesta, lee siguiente mensaje, repite
         peticion_inicial = " ".join(sys.argv[2:]).strip() if len(sys.argv) > 2 else None
+        ultimo_assistant = None
         if peticion_inicial:
             print(_proc_ideas(peticion_inicial))
         while True:
@@ -1386,6 +1461,24 @@ def main():
                 continue
             if msg.lower() in ("salir", "exit", "quit"):
                 break
+            # ── ARCHIVO DE IDEAS: transversal command dispatch ──
+            try:
+                from agents.memoria.commands import handle_command
+                from agents.memoria.storage import init_db
+                conn = init_db()
+                try:
+                    cmd_result = handle_command(
+                        msg, ultimo_assistant, "ideas_creativas", conn
+                    )
+                finally:
+                    conn.close()
+                if cmd_result is not None:
+                    print(cmd_result["content"])
+                    continue
+            except Exception as e:
+                print(f"⚠️ Error en archivo de ideas: {e}")
+                continue
+            # ── end ARCHIVO DE IDEAS ──
             print(_proc_ideas(msg))
         return
 

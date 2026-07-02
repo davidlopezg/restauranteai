@@ -117,6 +117,36 @@ def responder(mensaje: str, historial: list, skill: str = "ficha") -> dict:
     logger.info(f"[{timestamp}] Nueva petición (skill={skill}, len={len(mensaje)})")
 
     # ────────────────────────────────────────────────────────────────────
+    # ARCHIVO DE IDEAS: transversal command dispatch (added in v1)
+    # ────────────────────────────────────────────────────────────────────
+    ultimo_assistant = (
+        historial[-1]["content"]
+        if historial and historial[-1]["role"] == "assistant"
+        else ""
+    )
+    try:
+        from agents.memoria.commands import handle_command
+        from agents.memoria.storage import init_db
+
+        conn = init_db()
+        try:
+            cmd_result = handle_command(mensaje, ultimo_assistant, skill, conn)
+        finally:
+            conn.close()
+
+        if cmd_result is not None:
+            return cmd_result
+    except Exception as e:
+        tipo = type(e).__name__
+        logger.error(f"[{timestamp}] Error en archivo de ideas: {tipo}: {e}")
+        return {
+            "role": "assistant",
+            "content": f"⚠️ Error interno del archivo de ideas ({tipo}). "
+                       f"El chat sigue funcionando normalmente."
+        }
+    # ── end ARCHIVO DE IDEAS ──
+
+    # ────────────────────────────────────────────────────────────────────
     # Skill "proceso_creativo": state machine por sesión
     # ────────────────────────────────────────────────────────────────────
     if skill == "proceso_creativo":
