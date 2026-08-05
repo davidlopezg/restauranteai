@@ -3,36 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chef Creativo — RestaurantEAI</title>
-    <meta name="description" content="Generador de fichas culinarias con IA. Pedí un plato en lenguaje natural y recibí nombre, historia, ficha técnica, maridaje y prompt para imagen.">
-    <meta property="og:title" content="Chef Creativo — RestaurantEAI">
-    <meta property="og:description" content="Generador de fichas culinarias con IA para hostelería.">
+    <title data-i18n="title">El chef que piensa la carta contigo — RestaurantEAI</title>
+    <meta name="description" data-i18n="meta_desc" content="Chef Creativo con IA para hostelería: fichas, proceso creativo, ideas y chat con el contexto de tu restaurante. Software libre (MIT), implementación profesional.">
+    <meta property="og:title" data-i18n="og_title" content="Chef Creativo — RestaurantEAI">
+    <meta property="og:description" data-i18n="og_desc" content="El chef con IA que piensa la carta contigo. Software libre (MIT), implementación profesional.">
     <meta property="og:type" content="website">
+    <meta property="og:url" content="https://davidlopezg.github.io/restauranteai/">
     <style>
         /* ═══════════════════════════════════════════════════════════════════
-           Chef Creativo — Landing Page
-           Single-file, no dependencies, responsive.
+           Chef Creativo — Landing trilingüe (es · ca · en)
+           Single-file, zero-dependencies, responsive.
            ═══════════════════════════════════════════════════════════════════ */
 
         :root {
             --bg: #faf7f2;
             --surface: #ffffff;
-            --text: #2d2a26;
+            --text: #1a1714;
             --text-muted: #6b635b;
             --accent: #c44d34;
             --accent-hover: #a83a25;
             --accent-light: #fdf0ec;
             --border: #e8e3dc;
-            --gold: #b8860b;
             --radius: 12px;
-            --max-w: 820px;
+            --max-w: 860px;
         }
 
-        *, *::before, *::after {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        html { scroll-behavior: smooth; }
 
         body {
             font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
@@ -43,215 +41,259 @@
             -webkit-font-smoothing: antialiased;
         }
 
-        /* ── Layout ────────────────────────────────────────────────────── */
+        .container { max-width: var(--max-w); margin: 0 auto; padding: 0 24px; }
 
-        .container {
-            max-width: var(--max-w);
-            margin: 0 auto;
-            padding: 0 24px;
+        /* ── Header / language selector ─────────────────────────────────── */
+
+        .topbar {
+            border-bottom: 1px solid var(--border);
+            background: var(--surface);
+            position: sticky;
+            top: 0;
+            z-index: 10;
         }
 
-        /* ── Hero ──────────────────────────────────────────────────────── */
-
-        .hero {
-            padding: 80px 0 60px;
-            text-align: center;
+        .topbar .container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-top: 14px;
+            padding-bottom: 14px;
         }
 
-        .hero-emoji {
-            font-size: 64px;
-            margin-bottom: 8px;
-            display: block;
+        .brand {
+            font-weight: 800;
+            font-size: 1.05rem;
+            color: var(--text);
+            text-decoration: none;
+            letter-spacing: -0.01em;
         }
+
+        .lang-switch {
+            display: flex;
+            gap: 4px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 3px;
+        }
+
+        .lang-btn {
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            font-size: 0.82rem;
+            font-weight: 700;
+            padding: 6px 12px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            font-family: inherit;
+        }
+
+        .lang-btn:hover { color: var(--text); }
+        .lang-btn.active { background: var(--accent); color: #fff; }
+
+        /* ── Hero ───────────────────────────────────────────────────────── */
+
+        .hero { padding: 84px 0 64px; text-align: center; }
+
+        .hero-emoji { font-size: 64px; display: block; margin-bottom: 10px; }
 
         .hero h1 {
-            font-size: 2.8rem;
+            font-size: 2.7rem;
             font-weight: 800;
             letter-spacing: -0.02em;
-            color: #1a1714;
-            margin-bottom: 12px;
+            color: var(--text);
+            margin-bottom: 16px;
         }
 
         .hero .subtitle {
-            font-size: 1.25rem;
+            font-size: 1.22rem;
             color: var(--text-muted);
-            max-width: 540px;
-            margin: 0 auto 32px;
+            max-width: 600px;
+            margin: 0 auto 34px;
         }
 
-        .hero .badge {
-            display: inline-block;
-            background: var(--accent-light);
-            color: var(--accent);
-            border: 1px solid var(--accent);
-            font-size: 0.82rem;
-            font-weight: 600;
-            padding: 4px 14px;
-            border-radius: 20px;
-            margin-bottom: 20px;
-            letter-spacing: 0.02em;
-        }
-
-        /* ── Buttons ───────────────────────────────────────────────────── */
+        .btn-group { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 10px; }
 
         .btn {
             display: inline-block;
-            padding: 14px 36px;
+            padding: 14px 32px;
             border-radius: var(--radius);
-            font-size: 1.05rem;
+            font-size: 1.02rem;
             font-weight: 600;
             text-decoration: none;
             transition: all 0.2s ease;
             cursor: pointer;
             border: none;
+            font-family: inherit;
         }
 
-        .btn-primary {
-            background: var(--accent);
-            color: #fff;
-            box-shadow: 0 2px 12px rgba(196, 77, 52, 0.25);
-        }
-        .btn-primary:hover {
-            background: var(--accent-hover);
-            box-shadow: 0 4px 20px rgba(196, 77, 52, 0.35);
-            transform: translateY(-1px);
-        }
+        .btn-primary { background: var(--accent); color: #fff; box-shadow: 0 2px 12px rgba(196, 77, 52, 0.25); }
+        .btn-primary:hover { background: var(--accent-hover); box-shadow: 0 4px 20px rgba(196, 77, 52, 0.35); transform: translateY(-1px); }
 
-        .btn-secondary {
-            background: var(--surface);
-            color: var(--text);
-            border: 1.5px solid var(--border);
-            margin-left: 12px;
-        }
-        .btn-secondary:hover {
-            border-color: var(--accent);
-            color: var(--accent);
-        }
+        .btn-secondary { background: var(--surface); color: var(--text); border: 1.5px solid var(--border); }
+        .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
 
-        .btn-group {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 8px;
-        }
+        /* ── Sections ───────────────────────────────────────────────────── */
 
-        /* ── Sections ──────────────────────────────────────────────────── */
-
-        section {
-            padding: 60px 0;
-        }
+        section { padding: 64px 0; }
 
         section h2 {
             font-size: 1.7rem;
             font-weight: 700;
-            margin-bottom: 28px;
+            margin-bottom: 12px;
             text-align: center;
             letter-spacing: -0.01em;
         }
 
-        /* ── Features grid ─────────────────────────────────────────────── */
-
-        .features {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-            gap: 24px;
+        .section-lead {
+            text-align: center;
+            color: var(--text-muted);
+            max-width: 620px;
+            margin: 0 auto 36px;
+            font-size: 1.02rem;
         }
+
+        .alt-bg { background: var(--surface); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+
+        /* ── Pain → solution ────────────────────────────────────────────── */
+
+        .pain-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; margin-bottom: 36px; }
+
+        .pain-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 22px 20px;
+        }
+
+        .pain-card .icon { font-size: 26px; display: block; margin-bottom: 8px; }
+        .pain-card h4 { font-size: 1rem; font-weight: 700; margin-bottom: 4px; }
+        .pain-card p { font-size: 0.9rem; color: var(--text-muted); }
+
+        .solution-callout {
+            background: var(--accent-light);
+            border: 1px solid var(--accent);
+            border-radius: var(--radius);
+            padding: 22px 26px;
+            max-width: 680px;
+            margin: 0 auto;
+            text-align: center;
+            font-size: 1.05rem;
+        }
+        .solution-callout strong { color: var(--accent); }
+
+        /* ── Features / skills ──────────────────────────────────────────── */
+
+        .features { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 22px; }
 
         .feature-card {
             background: var(--surface);
             border: 1px solid var(--border);
             border-radius: var(--radius);
-            padding: 28px 24px;
+            padding: 26px 22px;
             transition: box-shadow 0.2s;
         }
-        .feature-card:hover {
-            box-shadow: 0 4px 16px rgba(0,0,0,0.06);
-        }
+        .feature-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.06); }
+        .feature-card .icon { font-size: 30px; display: block; margin-bottom: 10px; }
+        .feature-card h3 { font-size: 1.05rem; font-weight: 700; margin-bottom: 6px; }
+        .feature-card p { font-size: 0.9rem; color: var(--text-muted); }
 
-        .feature-card .icon {
-            font-size: 32px;
-            margin-bottom: 12px;
-            display: block;
-        }
+        /* ── Demo ───────────────────────────────────────────────────────── */
 
-        .feature-card h3 {
-            font-size: 1.05rem;
-            font-weight: 700;
-            margin-bottom: 6px;
-        }
+        .demo-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 30px 26px; }
 
-        .feature-card p {
-            font-size: 0.92rem;
-            color: var(--text-muted);
-        }
-
-        /* ── Demo / Preview ────────────────────────────────────────────── */
-
-        .demo-box {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            padding: 32px 28px;
-            text-align: center;
-        }
-
-        .demo-box .prompt-example {
-            background: var(--bg);
-            border: 1px dashed var(--border);
+        .demo-note {
+            background: var(--accent-light);
+            border: 1px solid var(--accent);
             border-radius: 8px;
-            padding: 14px 20px;
-            margin: 12px 0;
-            font-style: italic;
-            color: var(--text-muted);
-            font-size: 0.95rem;
-        }
-
-        /* ── How it works ──────────────────────────────────────────────── */
-
-        .steps {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            counter-reset: step;
-        }
-
-        .step {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            padding: 24px 20px;
-            position: relative;
+            padding: 10px 16px;
+            font-size: 0.85rem;
+            color: var(--text);
+            margin-bottom: 22px;
             text-align: center;
         }
 
-        .step::before {
-            counter-increment: step;
-            content: counter(step);
-            display: inline-block;
-            width: 32px;
-            height: 32px;
-            line-height: 32px;
-            border-radius: 50%;
-            background: var(--accent);
+        .ficha-sample {
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+            max-width: 640px;
+            margin: 0 auto 22px;
+        }
+
+        .ficha-sample .sample-head {
+            background: var(--text);
             color: #fff;
+            padding: 14px 18px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .ficha-sample .sample-head .tag { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.8; }
+
+        .ficha-sample .sample-body { padding: 18px; }
+        .ficha-sample .sample-body .dish-name { font-size: 1.15rem; font-weight: 800; margin-bottom: 6px; }
+        .ficha-sample .sample-body .dish-story { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 14px; }
+
+        .sample-rows { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+
+        .sample-row { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; }
+        .sample-row .row-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent); margin-bottom: 3px; }
+        .sample-row .row-value { font-size: 0.88rem; color: var(--text); }
+
+        .demo-cta { text-align: center; margin-top: 8px; }
+
+        /* ── Offer ──────────────────────────────────────────────────────── */
+
+        .offer-card {
+            background: var(--text);
+            color: #fff;
+            border-radius: 16px;
+            padding: 44px 34px;
+            text-align: center;
+            max-width: 720px;
+            margin: 0 auto;
+        }
+
+        .offer-card h3 { font-size: 1.5rem; font-weight: 800; margin-bottom: 12px; }
+        .offer-card p { color: rgba(255,255,255,0.85); max-width: 560px; margin: 0 auto 10px; font-size: 1.02rem; }
+        .offer-card .price-note { font-size: 0.85rem; opacity: 0.7; margin-bottom: 24px; }
+        .offer-card .btn { background: var(--accent); color: #fff; }
+        .offer-card .btn:hover { background: var(--accent-hover); }
+
+        /* ── FAQ ────────────────────────────────────────────────────────── */
+
+        .faq-list { max-width: 680px; margin: 0 auto; }
+
+        details {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 16px 20px;
+            margin-bottom: 10px;
+        }
+
+        summary {
             font-weight: 700;
-            font-size: 0.9rem;
-            margin-bottom: 12px;
+            font-size: 0.98rem;
+            cursor: pointer;
+            list-style: none;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
         }
 
-        .step h4 {
-            font-size: 1rem;
-            font-weight: 700;
-            margin-bottom: 6px;
-        }
+        summary::after { content: "+"; font-size: 1.3rem; color: var(--accent); font-weight: 400; }
+        details[open] summary::after { content: "–"; }
 
-        .step p {
-            font-size: 0.88rem;
-            color: var(--text-muted);
-        }
+        details p { margin-top: 10px; font-size: 0.92rem; color: var(--text-muted); }
 
-        /* ── Footer ────────────────────────────────────────────────────── */
+        /* ── Footer ─────────────────────────────────────────────────────── */
 
         footer {
             text-align: center;
@@ -261,400 +303,238 @@
             border-top: 1px solid var(--border);
         }
 
-        footer a {
-            color: var(--accent);
-            text-decoration: none;
-        }
-        footer a:hover {
-            text-decoration: underline;
-        }
+        footer a { color: var(--accent); text-decoration: none; }
+        footer a:hover { text-decoration: underline; }
 
-        /* ── Proceso creativo ────────────────────────────────────────────── */
-
-        .callout {
-            background: var(--accent-light);
-            border: 1px solid var(--accent);
-            border-radius: var(--radius);
-            padding: 18px 22px;
-            margin: 0 auto 32px;
-            max-width: 640px;
-            text-align: center;
-            font-size: 0.98rem;
-            color: var(--text);
-        }
-        .callout strong {
-            color: var(--accent);
-        }
-
-        .fase-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
-            gap: 14px;
-            margin-bottom: 36px;
-        }
-
-        .fase-card {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-left: 3px solid var(--accent);
-            border-radius: 8px;
-            padding: 16px 16px;
-            text-align: left;
-        }
-
-        .fase-card .fase-num {
-            display: inline-block;
-            font-size: 0.72rem;
-            font-weight: 700;
-            letter-spacing: 0.06em;
-            color: var(--accent);
-            text-transform: uppercase;
-            margin-bottom: 4px;
-        }
-
-        .fase-card h4 {
-            font-size: 0.95rem;
-            font-weight: 700;
-            margin-bottom: 4px;
-            color: var(--text);
-        }
-
-        .fase-card p {
-            font-size: 0.82rem;
-            color: var(--text-muted);
-            line-height: 1.45;
-        }
-
-        .methods-block {
-            text-align: center;
-            margin-top: 12px;
-        }
-
-        .methods-block .methods-title {
-            font-size: 0.78rem;
-            font-weight: 700;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-            color: var(--text-muted);
-            margin-bottom: 14px;
-        }
-
-        .methods-pills {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 8px;
-            max-width: 680px;
-            margin: 0 auto;
-        }
-
-        .pill {
-            display: inline-block;
-            background: var(--surface);
-            color: var(--text);
-            border: 1px solid var(--border);
-            font-size: 0.82rem;
-            font-weight: 500;
-            padding: 6px 14px;
-            border-radius: 20px;
-        }
-        .pill.pill-accent {
-            background: var(--accent-light);
-            color: var(--accent);
-            border-color: var(--accent);
-            font-weight: 600;
-        }
-
-        /* ── Responsive ────────────────────────────────────────────────── */
+        /* ── Responsive ─────────────────────────────────────────────────── */
 
         @media (max-width: 600px) {
-            .hero h1 { font-size: 2rem; }
+            .hero h1 { font-size: 1.9rem; }
             .hero .subtitle { font-size: 1.05rem; }
             .btn-group { flex-direction: column; }
-            .btn-secondary { margin-left: 0; margin-top: 8px; }
-            section { padding: 40px 0; }
+            .btn { width: 100%; text-align: center; }
+            section { padding: 44px 0; }
+            .offer-card { padding: 32px 22px; }
         }
     </style>
 </head>
 <body>
 
 <!-- ═══════════════════════════════════════════════════════════════════════════
+     TOPBAR + LANGUAGE SELECTOR
+     ═══════════════════════════════════════════════════════════════════════════ -->
+
+<div class="topbar">
+    <div class="container">
+        <a class="brand" href="#hero">🍂 RestaurantEAI</a>
+        <nav class="lang-switch" aria-label="Idioma / Language / Idioma">
+            <button class="lang-btn" data-lang="es" aria-label="Castellano">ES</button>
+            <button class="lang-btn" data-lang="ca" aria-label="Català">CA</button>
+            <button class="lang-btn" data-lang="en" aria-label="English">EN</button>
+        </nav>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
      HERO
      ═══════════════════════════════════════════════════════════════════════════ -->
 
-<header class="hero">
+<header class="hero" id="hero">
     <div class="container">
-        <span class="badge">MVP-0.5 · Desplegado en Hugging Face</span>
         <span class="hero-emoji">🍂</span>
-        <h1>Chef Creativo</h1>
-        <p class="subtitle">
-            Generador de fichas culinarias con inteligencia artificial.
-            Describí un plato en lenguaje natural y recibí nombre evocador,
-            historia, ficha técnica, maridaje y prompt para imagen.
+        <h1 data-i18n="hero_h1">El chef que piensa la carta contigo</h1>
+        <p class="subtitle" data-i18n="hero_subtitle">
+            Chef Creativo con IA para hostelería: fichas, proceso creativo, ideas y
+            chat — con el contexto de tu restaurante en mente.
         </p>
         <div class="btn-group">
             <a href="https://huggingface.co/spaces/davidlopezgamero/RestaurantEAI"
-               class="btn btn-primary" target="_blank" rel="noopener">
-                🍳 Probar ahora
+               class="btn btn-primary" target="_blank" rel="noopener" data-i18n="cta_demo">
+                Probar la demo
             </a>
-            <a href="#como-funciona" class="btn btn-secondary">
-                Cómo funciona →
+            <a href="#oferta" class="btn btn-secondary" data-i18n="cta_oferta">
+                Implementar en mi restaurante →
             </a>
         </div>
     </div>
 </header>
 
 <!-- ═══════════════════════════════════════════════════════════════════════════
-     EL CHEF TE CONOCE
+     PROBLEMA → SOLUCIÓN
      ═══════════════════════════════════════════════════════════════════════════ -->
 
-<section id="el-chef-te-conoce">
+<section id="problema">
     <div class="container">
-        <h2>El chef te conoce</h2>
-
-        <div class="callout">
-            La primera vez te hace <strong>15 preguntas</strong> sobre tu restaurante
-            —ticket, técnicas, clientela, restricciones, estilo— y las
-            <strong>recuerda para siempre</strong>.
-            No se lo tenés que volver a explicar.
+        <h2 data-i18n="problema_h2">¿Te suena?</h2>
+        <div class="pain-grid">
+            <div class="pain-card">
+                <span class="icon">📅</span>
+                <h4 data-i18n="pain1_t">Renovar la carta te lleva semanas</h4>
+                <p data-i18n="pain1_p">Entre proveedores, temporada y ensayos, sacar platos nuevos se convierte en un proyecto.</p>
+            </div>
+            <div class="pain-card">
+                <span class="icon">🤷</span>
+                <h4 data-i18n="pain2_t">Los platos nuevos no sorprenden</h4>
+                <p data-i18n="pain2_p">Mismas combinaciones de siempre, mismo resultado. La carta no cuenta nada.</p>
+            </div>
+            <div class="pain-card">
+                <span class="icon">⏰</span>
+                <h4 data-i18n="pain3_t">No hay tiempo para pensar</h4>
+                <p data-i18n="pain3_p">La sala, la cocina y los números te comen el día. La creatividad espera.</p>
+            </div>
         </div>
-
-        <div class="features">
-            <div class="feature-card">
-                <span class="icon">💶</span>
-                <h3>Tu ticket medio</h3>
-                <p>Mínimo, máximo y moda. El chef dimensiona la ficha a tu rango real, no al de un restaurante que no es el tuyo.</p>
-            </div>
-            <div class="feature-card">
-                <span class="icon">🔥</span>
-                <h3>Tus técnicas</h3>
-                <p>Brasas, arroces, fermentación, baja temperatura... las que ya dominás son el punto de partida, no una opción más.</p>
-            </div>
-            <div class="feature-card">
-                <span class="icon">👥</span>
-                <h3>Tus comensales</h3>
-                <p>Familias, business, turistas, banquetes. El plato se piensa para quien se sienta en tu mesa, no para un público genérico.</p>
-            </div>
-            <div class="feature-card">
-                <span class="icon">🌿</span>
-                <h3>Tus valores</h3>
-                <p>Km0, temporada, vegetariana, sin gluten, halal. Lo que tu cocina ya abrazó se respeta en cada ficha.</p>
-            </div>
-            <div class="feature-card">
-                <span class="icon">📍</span>
-                <h3>Tu entorno</h3>
-                <p>Localización, época y estilo. El chef sabe si estás en el litoral mediterráneo o en un pueblo de interior.</p>
-            </div>
-            <div class="feature-card">
-                <span class="icon">🚫</span>
-                <h3>Tus límites</h3>
-                <p>Restricciones religiosas, tiempo de servicio, política de grupos. El chef no te va a proponer cosas que no podés sostener.</p>
-            </div>
+        <div class="solution-callout">
+            <strong data-i18n="sol1">El Chef Creativo piensa contigo cada plato</strong>
+            <span data-i18n="sol2"> — con tu carta, tu ticket y tu temporada en mente. Tú pones el criterio; él pone el trabajo de crear.</span>
         </div>
     </div>
 </section>
 
 <!-- ═══════════════════════════════════════════════════════════════════════════
-     FEATURES
+     LAS 4 SKILLS REALES
      ═══════════════════════════════════════════════════════════════════════════ -->
 
-<section>
+<section class="alt-bg" id="skills">
     <div class="container">
-        <h2>Qué hace el chef</h2>
+        <h2 data-i18n="skills_h2">Qué hace el chef</h2>
+        <p class="section-lead" data-i18n="skills_lead">
+            Cuatro modos reales, todos con el contexto de tu restaurante inyectado
+            (ticket, línea culinaria, carta y estacionalidad).
+        </p>
         <div class="features">
-            <div class="feature-card">
-                <span class="icon">🍂</span>
-                <h3>Nombre evocador</h3>
-                <p>2-4 palabras que capturan el alma del plato, en castellano, con identidad mediterránea.</p>
-            </div>
-            <div class="feature-card">
-                <span class="icon">📝</span>
-                <h3>Storytelling</h3>
-                <p>Historia, origen, recuerdo. El plato cuenta algo. La gente no recuerda platos, recuerda historias.</p>
-            </div>
             <div class="feature-card">
                 <span class="icon">📋</span>
-                <h3>Ficha técnica</h3>
-                <p>Ingredientes precisos para 4 raciones + elaboración resumida en 3-5 pasos accionables.</p>
+                <h3 data-i18n="skill1_t">Ficha técnica</h3>
+                <p data-i18n="skill1_p">Describe un plato en lenguaje natural y recibe nombre, historia, ficha técnica, maridaje y prompt para imagen.</p>
             </div>
             <div class="feature-card">
-                <span class="icon">🍷</span>
-                <h3>Maridaje</h3>
-                <p>Sugerencia de bebida con justificación técnica. Vinos, cervezas, cócteles que potencian el plato.</p>
+                <span class="icon">🧠</span>
+                <h3 data-i18n="skill2_t">Proceso creativo</h3>
+                <p data-i18n="skill2_p">Muestra paso a paso cómo piensa el plato — alma, métodos creativos, equilibrio, técnica — y después la ficha final.</p>
             </div>
             <div class="feature-card">
-                <span class="icon">🎨</span>
-                <h3>Prompt para imagen</h3>
-                <p>Descripción detallada en inglés lista para DALL-E, Midjourney o Stable Diffusion.</p>
+                <span class="icon">💡</span>
+                <h3 data-i18n="skill3_t">Ideas creativas</h3>
+                <p data-i18n="skill3_p">Genera 10 ideas que encajan con tu restaurante y refina con métodos creativos de ElBulli.</p>
             </div>
             <div class="feature-card">
-                <span class="icon">🌿</span>
-                <h3>Estacionalidad</h3>
-                <p>Conocimiento real de producto de temporada en Cataluña. Avisa si un ingrediente está fuera de época.</p>
+                <span class="icon">💬</span>
+                <h3 data-i18n="skill4_t">Chat con el chef</h3>
+                <p data-i18n="skill4_p">Conversación libre sobre producto, técnica, carta, estacionalidad y proveedores — con todo tu contexto.</p>
             </div>
         </div>
     </div>
 </section>
 
 <!-- ═══════════════════════════════════════════════════════════════════════════
-     DEMO / EXAMPLES
+     DEMO
      ═══════════════════════════════════════════════════════════════════════════ -->
 
-<section style="background: var(--surface); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);">
+<section id="demo">
     <div class="container">
-        <h2>Probá con estos ejemplos</h2>
+        <h2 data-i18n="demo_h2">Pruébalo en 10 segundos</h2>
+        <p class="section-lead" data-i18n="demo_lead">
+            Sin registro, sin instalación, sin terminal. La demo usa un perfil genérico
+            de restaurante mediterráneo, marcado como demo.
+        </p>
         <div class="demo-box">
-            <div class="prompt-example">
-                "Entrante vegetariano con calabaza y queso de cabra"
+            <div class="demo-note">
+                ⚡ <span data-i18n="demo_note">La primera visita puede tardar unos segundos en arrancar (demo gratuita).</span>
             </div>
-            <div class="prompt-example">
-                "Postre con chocolate y aceite de oliva"
+
+            <!-- Ejemplo visual de ficha generada (fallback HTML puro) -->
+            <div class="ficha-sample">
+                <div class="sample-head">
+                    <span data-i18n="sample_tag">Ejemplo de ficha generada</span>
+                    <span class="tag" data-i18n="sample_demo">Demo</span>
+                </div>
+                <div class="sample-body">
+                    <div class="dish-name" data-i18n="sample_name">Calabaza de otoño</div>
+                    <div class="dish-story" data-i18n="sample_story">Evoca los colores del otoño en la Garrotxa: calabaza asada, queso de cabra y miel de romero.</div>
+                    <div class="sample-rows">
+                        <div class="sample-row">
+                            <div class="row-label" data-i18n="sample_ing_label">Ingredientes (4 raciones)</div>
+                            <div class="row-value" data-i18n="sample_ing">Calabaza 500 g · Queso de cabra 200 g · Miel · Romero</div>
+                        </div>
+                        <div class="sample-row">
+                            <div class="row-label" data-i18n="sample_pair_label">Maridaje</div>
+                            <div class="row-value" data-i18n="sample_pair">Blanco joven del Penedès</div>
+                        </div>
+                        <div class="sample-row">
+                            <div class="row-label" data-i18n="sample_tech_label">Elaboración</div>
+                            <div class="row-value" data-i18n="sample_tech">Asar 40 min a 180 °C, gratinar con queso y miel.</div>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="prompt-example">
-                "Principal de carne para menú degustación de 7 pasos"
+
+            <div class="demo-cta">
+                <a href="https://huggingface.co/spaces/davidlopezgamero/RestaurantEAI"
+                   class="btn btn-primary" target="_blank" rel="noopener" data-i18n="cta_demo2">
+                    Abrir el chat de la demo →
+                </a>
             </div>
-            <div class="prompt-example">
-                "Risotto de setas con trufa, para noche de gala"
-            </div>
-            <div class="prompt-example">
-                "Plato de verano con tomate y anchoas"
-            </div>
-            <p style="margin-top: 20px; color: var(--text-muted); font-size: 0.9rem;">
-                Copiá cualquiera de estos y pegalo en el chat del chef.
+        </div>
+    </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     OFERTA OPEN CORE
+     ═══════════════════════════════════════════════════════════════════════════ -->
+
+<section class="alt-bg" id="oferta">
+    <div class="container">
+        <h2 data-i18n="oferta_h2">¿Quieres esto en tu restaurante?</h2>
+        <div class="offer-card">
+            <h3 data-i18n="oferta_t">El software es libre. La implementación, a tu medida.</h3>
+            <p data-i18n="oferta_p1">
+                El Chef Creativo es código abierto (MIT): puedes usarlo gratis, mirar el código
+                y adaptarlo. Si prefieres que tu restaurante quede configurado y funcionando sin
+                preocuparte de nada, lo implementamos por ti.
             </p>
-            <a href="https://huggingface.co/spaces/davidlopezgamero/RestaurantEAI"
-               class="btn btn-primary" target="_blank" rel="noopener"
-               style="margin-top: 16px;">
-                Ir al chat →
+            <p data-i18n="oferta_p2">
+                Configuramos tu perfil (ticket, carta, temporada, restricciones), lo desplegamos
+                y te enseñamos a usarlo. Tú pones el restaurante; nosotros, la instalación.
+            </p>
+            <div class="price-note" data-i18n="oferta_note">
+                Servicio de implementación profesional · Escríbenos para recibir una propuesta
+            </div>
+            <a href="mailto:davidlopezgamero@gmail.com?subject=Quiero%20el%20Chef%20Creativo%20en%20mi%20restaurante"
+               class="btn" data-i18n-href="cta_oferta_href" data-i18n="oferta_cta">
+                Escríbenos por email →
             </a>
         </div>
     </div>
 </section>
 
 <!-- ═══════════════════════════════════════════════════════════════════════════
-     HOW IT WORKS
+     FAQ
      ═══════════════════════════════════════════════════════════════════════════ -->
 
-<section id="como-funciona">
+<section id="faq">
     <div class="container">
-        <h2>Cómo funciona</h2>
-        <div class="steps">
-            <div class="step">
-                <h4>Escribís tu idea</h4>
-                <p>Describí un plato en lenguaje natural. Vago, específico o sólo palabras sueltas.</p>
-            </div>
-            <div class="step">
-                <h4>El chef pregunta</h4>
-                <p>Antes de cocinar, detecta lo que falta (estacionalidad, ocasión, comensales, presupuesto, restricciones) y te hace sólo las preguntas necesarias. No inventa, no asume.</p>
-            </div>
-            <div class="step">
-                <h4>El chef razona</h4>
-                <p>Trabaja 7 fases: alma del plato, métodos creativos, equilibrio, técnica, storytelling, descartadas y preguntas finales.</p>
-            </div>
-            <div class="step">
-                <h4>Recibís la ficha</h4>
-                <p>Nombre, historia, ingredientes, elaboración, maridaje y prompt de imagen. Listo para usar.</p>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- ═══════════════════════════════════════════════════════════════════════════
-     PROCESO CREATIVO
-     ═══════════════════════════════════════════════════════════════════════════ -->
-
-<section id="proceso-creativo" style="background: var(--surface); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);">
-    <div class="container">
-        <h2>Proceso creativo</h2>
-
-        <div class="callout">
-            Además del modo directo, podés lanzar el <strong>proceso creativo explícito</strong>:
-            el chef trabaja el plato fase por fase y te muestra su razonamiento antes de escribir la ficha final.
-        </div>
-
-        <div class="fase-grid">
-            <div class="fase-card">
-                <span class="fase-num">Fase 1</span>
-                <h4>Alma</h4>
-                <p>Qué evoca, qué recuerdo, qué estación, qué producto.</p>
-            </div>
-            <div class="fase-card">
-                <span class="fase-num">Fase 2</span>
-                <h4>Métodos creativos</h4>
-                <p>Qué técnicas de creación aplican (de ElBulli y propias).</p>
-            </div>
-            <div class="fase-card">
-                <span class="fase-num">Fase 3</span>
-                <h4>Equilibrio</h4>
-                <p>Dulce / salado / ácido / amargo / umami / graso. El punto crítico.</p>
-            </div>
-            <div class="fase-card">
-                <span class="fase-num">Fase 4</span>
-                <h4>Técnica</h4>
-                <p>Qué procesos potencian el producto sin enmascararlo.</p>
-            </div>
-            <div class="fase-card">
-                <span class="fase-num">Fase 5</span>
-                <h4>Storytelling</h4>
-                <p>Qué historia va a contar, a quién, por qué se va a recordar.</p>
-            </div>
-            <div class="fase-card">
-                <span class="fase-num">Fase 6</span>
-                <h4>Descartadas</h4>
-                <p>Cosas que consideró y rechazó. Por qué este plato y no otro.</p>
-            </div>
-            <div class="fase-card">
-                <span class="fase-num">Fase 7</span>
-                <h4>Preguntas</h4>
-                <p>Lo que aún le preocupa o necesita validar contigo.</p>
-            </div>
-        </div>
-
-        <div class="methods-block">
-            <div class="methods-title">Métodos creativos que el chef puede aplicar</div>
-            <div class="methods-pills">
-                <span class="pill pill-accent">Lo autóctono</span>
-                <span class="pill">Influencias externas</span>
-                <span class="pill">Los sentidos como punto de partida</span>
-                <span class="pill pill-accent">El sexto sentido</span>
-                <span class="pill">Simbiosis dulce / salado</span>
-                <span class="pill pill-accent">Asociación</span>
-                <span class="pill">Inspiración</span>
-                <span class="pill">Adaptación</span>
-                <span class="pill">Deconstrucción</span>
-                <span class="pill">Minimalismo</span>
-                <span class="pill pill-accent">Sinergia</span>
-            </div>
-            <p style="margin-top: 20px; color: var(--text-muted); font-size: 0.88rem;">
-                En cada plato elige 2–3 métodos específicos y los justifica. No es decoración: es la herramienta con la que piensa.
-            </p>
-        </div>
-    </div>
-</section>
-
-<!-- ═══════════════════════════════════════════════════════════════════════════
-     TECH STACK
-     ═══════════════════════════════════════════════════════════════════════════ -->
-
-<section>
-    <div class="container">
-        <h2>Tecnología</h2>
-        <div class="features">
-            <div class="feature-card">
-                <span class="icon">🧠</span>
-                <h3>MiniMax-M3</h3>
-                <p>Modelo frontier con 1M de ventana de contexto. Razonamiento culinario de alto nivel.</p>
-            </div>
-            <div class="feature-card">
-                <span class="icon">🤗</span>
-                <h3>Hugging Face Spaces</h3>
-                <p>Desplegado en infraestructura gratuita de HF. Sin coste de servidor.</p>
-            </div>
-            <div class="feature-card">
-                <span class="icon">🐍</span>
-                <h3>Python + Gradio</h3>
-                <p>Backend en Python con httpx directo a la API. UI en Gradio 6. Código abierto (MIT).</p>
-            </div>
+        <h2 data-i18n="faq_h2">Preguntas frecuentes</h2>
+        <div class="faq-list">
+            <details>
+                <summary data-i18n="faq1_q">¿Necesito saber programar?</summary>
+                <p data-i18n="faq1_a">No. El software es libre, pero la implementación la hacemos nosotros: configuramos tu perfil, desplegamos y te enseñamos a usarlo.</p>
+            </details>
+            <details>
+                <summary data-i18n="faq2_q">¿Cuánto tarda en probarlo?</summary>
+                <p data-i18n="faq2_a">La demo está online: ábrela y prueba en segundos, sin registro. La primera visita puede tardar un poco en arrancar.</p>
+            </details>
+            <details>
+                <summary data-i18n="faq3_q">¿Y mis datos?</summary>
+                <p data-i18n="faq3_a">La demo usa un perfil de ejemplo. Tu restaurante (carta, ticket, ideas) vive en tu propia instancia privada; tú controlas tus datos.</p>
+            </details>
+            <details>
+                <summary data-i18n="faq4_q">¿Vale para mi tipo de restaurante?</summary>
+                <p data-i18n="faq4_a">Funciona con cualquier línea: pizzería, arrocería, cocina de mercado, alta cocina. Se configura a tu ticket, técnicas y clientela.</p>
+            </details>
+            <details>
+                <summary data-i18n="faq5_q">¿El software es realmente gratis?</summary>
+                <p data-i18n="faq5_a">Sí. Es código abierto con licencia MIT. Lo que se paga, si lo deseas, es el servicio de implementación y configuración a medida.</p>
+            </details>
         </div>
     </div>
 </section>
@@ -665,21 +545,280 @@
 
 <footer>
     <div class="container">
-        <p>
-            <strong>RestaurantEAI</strong> · Sistema multi-agente de IA para hostelería.
-        </p>
+        <p><strong data-i18n="footer_brand">RestaurantEAI</strong> · <span data-i18n="footer_tag">Sistema multi-agente de IA para hostelería.</span></p>
         <p style="margin-top: 8px;">
-            <a href="https://github.com/davidlopezg/restauranteai" target="_blank" rel="noopener">GitHub</a>
+            <a href="https://github.com/davidlopezg/restauranteai" target="_blank" rel="noopener" data-i18n="footer_github">GitHub</a>
             &nbsp;·&nbsp;
-            <a href="https://huggingface.co/spaces/davidlopezgamero/RestaurantEAI" target="_blank" rel="noopener">HF Space</a>
+            <a href="https://huggingface.co/spaces/davidlopezgamero/RestaurantEAI" target="_blank" rel="noopener" data-i18n="footer_demo">Demo en vivo</a>
             &nbsp;·&nbsp;
-            Licencia MIT
+            <span data-i18n="footer_license">Licencia MIT</span>
         </p>
-        <p style="margin-top: 12px; opacity: 0.7;">
-            Construido con 🍂 por David López Gamero · Cataluña, 2026
+        <p style="margin-top: 12px; opacity: 0.75;" data-i18n="footer_credit">
+            Construido por un hostelero real (David López Gamero) · Cataluña, 2026
         </p>
     </div>
 </footer>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════════════════
+   Diccionario trilingüe — es · ca · en
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+const LANG = {
+    es: {
+        title: "El chef que piensa la carta contigo — RestaurantEAI",
+        meta_desc: "Chef Creativo con IA para hostelería: fichas, proceso creativo, ideas y chat con el contexto de tu restaurante. Software libre (MIT), implementación profesional.",
+        og_title: "Chef Creativo — RestaurantEAI",
+        og_desc: "El chef con IA que piensa la carta contigo. Software libre (MIT), implementación profesional.",
+        hero_h1: "El chef que piensa la carta contigo",
+        hero_subtitle: "Chef Creativo con IA para hostelería: fichas, proceso creativo, ideas y chat — con el contexto de tu restaurante en mente.",
+        cta_demo: "Probar la demo",
+        cta_oferta: "Implementar en mi restaurante →",
+        problema_h2: "¿Te suena?",
+        pain1_t: "Renovar la carta te lleva semanas",
+        pain1_p: "Entre proveedores, temporada y ensayos, sacar platos nuevos se convierte en un proyecto.",
+        pain2_t: "Los platos nuevos no sorprenden",
+        pain2_p: "Mismas combinaciones de siempre, mismo resultado. La carta no cuenta nada.",
+        pain3_t: "No hay tiempo para pensar",
+        pain3_p: "La sala, la cocina y los números te comen el día. La creatividad espera.",
+        sol1: "El Chef Creativo piensa contigo cada plato",
+        sol2: " — con tu carta, tu ticket y tu temporada en mente. Tú pones el criterio; él pone el trabajo de crear.",
+        skills_h2: "Qué hace el chef",
+        skills_lead: "Cuatro modos reales, todos con el contexto de tu restaurante inyectado (ticket, línea culinaria, carta y estacionalidad).",
+        skill1_t: "Ficha técnica",
+        skill1_p: "Describe un plato en lenguaje natural y recibe nombre, historia, ficha técnica, maridaje y prompt para imagen.",
+        skill2_t: "Proceso creativo",
+        skill2_p: "Muestra paso a paso cómo piensa el plato — alma, métodos creativos, equilibrio, técnica — y después la ficha final.",
+        skill3_t: "Ideas creativas",
+        skill3_p: "Genera 10 ideas que encajan con tu restaurante y refina con métodos creativos de ElBulli.",
+        skill4_t: "Chat con el chef",
+        skill4_p: "Conversación libre sobre producto, técnica, carta, estacionalidad y proveedores — con todo tu contexto.",
+        demo_h2: "Pruébalo en 10 segundos",
+        demo_lead: "Sin registro, sin instalación, sin terminal. La demo usa un perfil genérico de restaurante mediterráneo, marcado como demo.",
+        demo_note: "La primera visita puede tardar unos segundos en arrancar (demo gratuita).",
+        sample_tag: "Ejemplo de ficha generada",
+        sample_demo: "Demo",
+        sample_name: "Calabaza de otoño",
+        sample_story: "Evoca los colores del otoño en la Garrotxa: calabaza asada, queso de cabra y miel de romero.",
+        sample_ing_label: "Ingredientes (4 raciones)",
+        sample_ing: "Calabaza 500 g · Queso de cabra 200 g · Miel · Romero",
+        sample_pair_label: "Maridaje",
+        sample_pair: "Blanco joven del Penedès",
+        sample_tech_label: "Elaboración",
+        sample_tech: "Asar 40 min a 180 °C, gratinar con queso y miel.",
+        cta_demo2: "Abrir el chat de la demo →",
+        oferta_h2: "¿Quieres esto en tu restaurante?",
+        oferta_t: "El software es libre. La implementación, a tu medida.",
+        oferta_p1: "El Chef Creativo es código abierto (MIT): puedes usarlo gratis, mirar el código y adaptarlo. Si prefieres que tu restaurante quede configurado y funcionando sin preocuparte de nada, lo implementamos por ti.",
+        oferta_p2: "Configuramos tu perfil (ticket, carta, temporada, restricciones), lo desplegamos y te enseñamos a usarlo. Tú pones el restaurante; nosotros, la instalación.",
+        oferta_note: "Servicio de implementación profesional · Escríbenos para recibir una propuesta",
+        oferta_cta: "Escríbenos por email →",
+        cta_oferta_href: "mailto:davidlopezgamero@gmail.com?subject=Quiero%20el%20Chef%20Creativo%20en%20mi%20restaurante",
+        faq_h2: "Preguntas frecuentes",
+        faq1_q: "¿Necesito saber programar?",
+        faq1_a: "No. El software es libre, pero la implementación la hacemos nosotros: configuramos tu perfil, desplegamos y te enseñamos a usarlo.",
+        faq2_q: "¿Cuánto tarda en probarlo?",
+        faq2_a: "La demo está online: ábrela y prueba en segundos, sin registro. La primera visita puede tardar un poco en arrancar.",
+        faq3_q: "¿Y mis datos?",
+        faq3_a: "La demo usa un perfil de ejemplo. Tu restaurante (carta, ticket, ideas) vive en tu propia instancia privada; tú controlas tus datos.",
+        faq4_q: "¿Vale para mi tipo de restaurante?",
+        faq4_a: "Funciona con cualquier línea: pizzería, arrocería, cocina de mercado, alta cocina. Se configura a tu ticket, técnicas y clientela.",
+        faq5_q: "¿El software es realmente gratis?",
+        faq5_a: "Sí. Es código abierto con licencia MIT. Lo que se paga, si lo deseas, es el servicio de implementación y configuración a medida.",
+        footer_brand: "RestaurantEAI",
+        footer_tag: "Sistema multi-agente de IA para hostelería.",
+        footer_github: "GitHub",
+        footer_demo: "Demo en vivo",
+        footer_license: "Licencia MIT",
+        footer_credit: "Construido por un hostelero real (David López Gamero) · Cataluña, 2026"
+    },
+
+    ca: {
+        title: "El xef que pensa la carta amb tu — RestaurantEAI",
+        meta_desc: "Xef Creatiu amb IA per a hostaleria: fitxes, procés creatiu, idees i xat amb el context del teu restaurant. Programari lliure (MIT), implementació professional.",
+        og_title: "Xef Creatiu — RestaurantEAI",
+        og_desc: "El xef amb IA que pensa la carta amb tu. Programari lliure (MIT), implementació professional.",
+        hero_h1: "El xef que pensa la carta amb tu",
+        hero_subtitle: "Xef Creatiu amb IA per a hostaleria: fitxes, procés creatiu, idees i xat — amb el context del teu restaurant al cap.",
+        cta_demo: "Prova la demo",
+        cta_oferta: "Implementar al meu restaurant →",
+        problema_h2: "Et sona?",
+        pain1_t: "Renovar la carta et porta setmanes",
+        pain1_p: "Entre proveïdors, temporada i assajos, treure plats nous es converteix en un projecte.",
+        pain2_t: "Els plats nous no sorprenen",
+        pain2_p: "Les mateixes combinacions de sempre, el mateix resultat. La carta no explica res.",
+        pain3_t: "No hi ha temps per pensar",
+        pain3_p: "La sala, la cuina i els números se't mengen el dia. La creativitat espera.",
+        sol1: "El Xef Creatiu pensa amb tu cada plat",
+        sol2: " — amb la teva carta, el teu ticket i la teva temporada al cap. Tu poses el criteri; ell posa la feina de crear.",
+        skills_h2: "Què fa el xef",
+        skills_lead: "Quatre modes reals, tots amb el context del teu restaurant injectat (ticket, línia culinària, carta i estacionalitat).",
+        skill1_t: "Fitxa tècnica",
+        skill1_p: "Descriu un plat en llenguatge natural i rep nom, història, fitxa tècnica, maridatge i prompt per a imatge.",
+        skill2_t: "Procés creatiu",
+        skill2_p: "Mostra pas a pas com pensa el plat — ànima, mètodes creatius, equilibri, tècnica — i després la fitxa final.",
+        skill3_t: "Idees creatives",
+        skill3_p: "Genera 10 idees que encaixen amb el teu restaurant i refina amb mètodes creatius d'ElBulli.",
+        skill4_t: "Xat amb el xef",
+        skill4_p: "Conversa lliure sobre producte, tècnica, carta, estacionalitat i proveïdors — amb tot el teu context.",
+        demo_h2: "Prova-ho en 10 segons",
+        demo_lead: "Sense registre, sense instal·lació, sense terminal. La demo utilitza un perfil genèric de restaurant mediterrani, marcat com a demo.",
+        demo_note: "La primera visita pot tardar uns segons a arrencar (demo gratuïta).",
+        sample_tag: "Exemple de fitxa generada",
+        sample_demo: "Demo",
+        sample_name: "Carbassa de tardor",
+        sample_story: "Evoca els colors de la tardor a la Garrotxa: carbassa rostida, formatge de cabra i mel de romaní.",
+        sample_ing_label: "Ingredients (4 racions)",
+        sample_ing: "Carbassa 500 g · Formatge de cabra 200 g · Mel · Romaní",
+        sample_pair_label: "Maridatge",
+        sample_pair: "Blanc jove del Penedès",
+        sample_tech_label: "Elaboració",
+        sample_tech: "Rostir 40 min a 180 °C, gratinar amb formatge i mel.",
+        cta_demo2: "Obre el xat de la demo →",
+        oferta_h2: "Vols això al teu restaurant?",
+        oferta_t: "El programari és lliure. La implementació, a mida.",
+        oferta_p1: "El Xef Creatiu és codi obert (MIT): el pots fer servir gratuïtament, mirar el codi i adaptar-lo. Si prefereixes que el teu restaurant quedi configurat i funcionant sense preocupar-te de res, ho implementem per tu.",
+        oferta_p2: "Configurem el teu perfil (ticket, carta, temporada, restriccions), el despleguem i t'ensenyem a fer-lo servir. Tu poses el restaurant; nosaltres, la instal·lació.",
+        oferta_note: "Servei d'implementació professional · Escriu-nos per rebre una proposta",
+        oferta_cta: "Escriu-nos per email →",
+        cta_oferta_href: "mailto:davidlopezgamero@gmail.com?subject=Vull%20el%20Chef%20Creativo%20al%20meu%20restaurant",
+        faq_h2: "Preguntes freqüents",
+        faq1_q: "Necessito saber programar?",
+        faq1_a: "No. El programari és lliure, però la implementació la fem nosaltres: configurem el teu perfil, despleguem i t'ensenyem a fer-lo servir.",
+        faq2_q: "Quant trigo a provar-ho?",
+        faq2_a: "La demo és en línia: obre-la i prova en segons, sense registre. La primera visita pot trigar una mica a arrencar.",
+        faq3_q: "I les meves dades?",
+        faq3_a: "La demo utilitza un perfil d'exemple. El teu restaurant (carta, ticket, idees) viu a la teva pròpia instància privada; tu controles les teves dades.",
+        faq4_q: "Val per al meu tipus de restaurant?",
+        faq4_a: "Funciona amb qualsevol línia: pizzeria, arrosseria, cuina de mercat, alta cuina. Es configura al teu ticket, tècniques i clientela.",
+        faq5_q: "El programari és realment gratuït?",
+        faq5_a: "Sí. És codi obert amb llicència MIT. El que es paga, si ho desitges, és el servei d'implementació i configuració a mida.",
+        footer_brand: "RestaurantEAI",
+        footer_tag: "Sistema multi-agent d'IA per a hostaleria.",
+        footer_github: "GitHub",
+        footer_demo: "Demo en directe",
+        footer_license: "Llicència MIT",
+        footer_credit: "Construït per un hostaler real (David López Gamero) · Catalunya, 2026"
+    },
+
+    en: {
+        title: "The chef who thinks the menu with you — RestaurantEAI",
+        meta_desc: "AI Creative Chef for hospitality: recipe cards, creative process, ideas and chat with your restaurant's context. Free software (MIT), professional implementation.",
+        og_title: "Creative Chef — RestaurantEAI",
+        og_desc: "The AI chef who thinks the menu with you. Free software (MIT), professional implementation.",
+        hero_h1: "The chef who thinks the menu with you",
+        hero_subtitle: "AI Creative Chef for hospitality: recipe cards, creative process, ideas and chat — with your restaurant's context in mind.",
+        cta_demo: "Try the demo",
+        cta_oferta: "Get it in my restaurant →",
+        problema_h2: "Sound familiar?",
+        pain1_t: "Refreshing the menu takes weeks",
+        pain1_p: "Between suppliers, seasons and trials, launching new dishes becomes a project.",
+        pain2_t: "New dishes don't surprise anyone",
+        pain2_p: "Same old combinations, same result. The menu says nothing.",
+        pain3_t: "No time to think",
+        pain3_p: "The floor, the kitchen and the numbers eat your day. Creativity waits.",
+        sol1: "The Creative Chef thinks every dish with you",
+        sol2: " — with your menu, your ticket and your season in mind. You bring the judgment; it does the creative work.",
+        skills_h2: "What the chef does",
+        skills_lead: "Four real modes, all with your restaurant's context injected (ticket, culinary line, menu and seasonality).",
+        skill1_t: "Recipe card",
+        skill1_p: "Describe a dish in plain language and get name, story, technical sheet, pairing and image prompt.",
+        skill2_t: "Creative process",
+        skill2_p: "Shows step by step how the dish is thought through — soul, creative methods, balance, technique — then the final card.",
+        skill3_t: "Creative ideas",
+        skill3_p: "Generates 10 ideas that fit your restaurant and refines them with ElBulli creative methods.",
+        skill4_t: "Chat with the chef",
+        skill4_p: "Free conversation about produce, technique, menu, seasonality and suppliers — with all your context.",
+        demo_h2: "Try it in 10 seconds",
+        demo_lead: "No sign-up, no install, no terminal. The demo uses a generic Mediterranean restaurant profile, clearly marked as a demo.",
+        demo_note: "The first visit may take a few seconds to start (free demo).",
+        sample_tag: "Sample generated card",
+        sample_demo: "Demo",
+        sample_name: "Autumn pumpkin",
+        sample_story: "Evokes the autumn colours of La Garrotxa: roasted pumpkin, goat cheese and rosemary honey.",
+        sample_ing_label: "Ingredients (serves 4)",
+        sample_ing: "Pumpkin 500 g · Goat cheese 200 g · Honey · Rosemary",
+        sample_pair_label: "Pairing",
+        sample_pair: "Young white from Penedès",
+        sample_tech_label: "Method",
+        sample_tech: "Roast 40 min at 180 °C, gratin with cheese and honey.",
+        cta_demo2: "Open the demo chat →",
+        oferta_h2: "Want this in your restaurant?",
+        oferta_t: "The software is free. The implementation, tailored to you.",
+        oferta_p1: "The Creative Chef is open source (MIT): use it for free, read the code, adapt it. If you'd rather have your restaurant configured and running without worrying about anything, we implement it for you.",
+        oferta_p2: "We set up your profile (ticket, menu, season, restrictions), deploy it and show you how to use it. You bring the restaurant; we bring the setup.",
+        oferta_note: "Professional implementation service · Write to us for a proposal",
+        oferta_cta: "Email us →",
+        cta_oferta_href: "mailto:davidlopezgamero@gmail.com?subject=I%20want%20Chef%20Creativo%20in%20my%20restaurant",
+        faq_h2: "Frequently asked questions",
+        faq1_q: "Do I need to know how to code?",
+        faq1_a: "No. The software is free, but we handle the implementation: we configure your profile, deploy and train you.",
+        faq2_q: "How long to try it?",
+        faq2_a: "The demo is online: open it and try in seconds, no sign-up. The first visit may take a moment to start.",
+        faq3_q: "What about my data?",
+        faq3_a: "The demo uses an example profile. Your restaurant (menu, ticket, ideas) lives in your own private instance; you control your data.",
+        faq4_q: "Does it work for my type of restaurant?",
+        faq4_a: "It works with any cuisine: pizzeria, rice dishes, market cooking, fine dining. It adapts to your ticket, techniques and clientele.",
+        faq5_q: "Is the software really free?",
+        faq5_a: "Yes. It's open source under the MIT license. What you pay, if you wish, is the tailored implementation and setup service.",
+        footer_brand: "RestaurantEAI",
+        footer_tag: "Multi-agent AI system for hospitality.",
+        footer_github: "GitHub",
+        footer_demo: "Live demo",
+        footer_license: "MIT License",
+        footer_credit: "Built by a real restaurateur (David López Gamero) · Catalonia, 2026"
+    }
+};
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   i18n runtime
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+function aplicar_idioma(lang) {
+    if (!LANG[lang]) lang = "es";
+    const d = LANG[lang];
+    document.documentElement.lang = lang;
+    document.title = d.title;
+    const meta = document.querySelector('meta[name="description"]');
+    if (meta) meta.content = d.meta_desc;
+    const ogTitle = document.querySelector('meta[property="og:title"]');
+    if (ogTitle) ogTitle.content = d.og_title;
+    const ogDesc = document.querySelector('meta[property="og:description"]');
+    if (ogDesc) ogDesc.content = d.og_desc;
+
+    document.querySelectorAll("[data-i18n]").forEach(function (el) {
+        const k = el.getAttribute("data-i18n");
+        if (d[k] !== undefined) el.textContent = d[k];
+    });
+    document.querySelectorAll("[data-i18n-href]").forEach(function (el) {
+        const k = el.getAttribute("data-i18n-href");
+        if (d[k] !== undefined) el.href = d[k];
+    });
+    document.querySelectorAll(".lang-btn").forEach(function (btn) {
+        btn.classList.toggle("active", btn.getAttribute("data-lang") === lang);
+    });
+    try { localStorage.setItem("lang", lang); } catch (e) { /* no-op */ }
+}
+
+function idioma_inicial() {
+    let saved = null;
+    try { saved = localStorage.getItem("lang"); } catch (e) { /* no-op */ }
+    if (saved && LANG[saved]) return saved;
+    const nav = (navigator.language || "es").toLowerCase();
+    if (nav.startsWith("ca")) return "ca";
+    if (nav.startsWith("en")) return "en";
+    return "es";
+}
+
+document.addEventListener("DOMContentLoaded", function () {
+    document.querySelectorAll(".lang-btn").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+            aplicar_idioma(btn.getAttribute("data-lang"));
+        });
+    });
+    aplicar_idioma(idioma_inicial());
+});
+</script>
 
 </body>
 </html>
