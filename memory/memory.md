@@ -408,3 +408,55 @@ La skill `ideas_creativas` (en `agents/creativo/skills.py:54-66`, con handler en
 **Actualización (2026-07-02 tarde):** verifiqué con `{action: "get"}` de cada agent — `sdd-proposal`, `sdd-spec`, `sdd-design`, `sdd-tasks`, `sdd-archive` SÍ tienen `write`/`edit`. Solo `sdd-explore` (y posiblemente `sdd-status`) carecen de escritura. **Workaround ya no es necesario** para todas las fases excepto `sdd-explore` (donde sí tuve que sintetizar yo el explore.md). Para futuras fases, el subagent persiste solo — yo solo delego y reviso.
 
 **Pendiente inmediato:** delegar `sdd-proposal` con el workaround del contenido inline.
+### 2026-08-05 — SDD en curso: change `producto-vendible` (Fase 1: hacer vendible el producto)
+
+**Contexto:** David pidió mejorar el producto "al máximo, visual y operativamente, para que sea vendible". Ronda de producto resuelta → arrancó SDD formal en modo interactivo.
+
+**Decisiones de producto cerradas con David:**
+1. **Modelo OPEN CORE**: software gratis (MIT), monetización = servicio de implementación pago ("si alguien quiere que se lo implemente, paga").
+2. Comprador target: hosteleros/chefs no técnicos.
+3. Infra 100% gratis: GitHub Pages + HF Space. Sin dominio/hosting pago.
+4. Demo = perfil genérico (restaurante mediterráneo, ticket medio), marcado `demo: true`. **Nunca** Sol de Nit ni datos reales en superficies públicas.
+5. Scope en 2 fases: **Fase 1 = change `producto-vendible`** (seed demo + landing trilingüe + polish app + deps doc); **Fase 2 = change `init-web`** (UI de configuración del restaurante en navegador), aparte.
+6. Lead capture Fase 1 = `mailto:davidlopezgamero@gmail.com` con subject pre-armado (Google Form diferido).
+7. Landing trilingüe: català · castellano · English, 3 versiones completas, default castellano, single-file zero-deps.
+8. Credibilidad: sin testimonios inventados; solo "construido por un hostelero real" + open source + demo live.
+9. Landing live verificada: https://davidlopezg.github.io/restauranteai/ (HTTP 200). Repo GitHub = `restauranteai` (la carpeta local dice `restauranteia` — remote origin apunta a `restauranteai`).
+10. Versión castellana = **neutro peninsular** (no voseo) en superficies públicas.
+11. Visual demo: screenshot estático commiteado como vía principal (iframe de Gradio 6 probablemente bloqueado).
+12. Si screenshot: 2-3 capturas (ficha, proceso creativo, ideas).
+13. Copy de cold start: sí, línea discreta.
+14. Space UI = solo castellano en Fase 1; trilingüe solo en landing.
+
+**Hallazgos críticos del explore (evidencia):**
+- **La demo pública miente sin querer**: en HF no-TTY se generan `restaurante.json={}` y `catalogo_platos.json=[]` vacíos → el chef corre sin contexto mientras la landing promete "15 preguntas / recuerda para siempre". El seed demo resuelve esto.
+- **Landing desactualizada**: dice "MVP-0.5" (código está en MVP-3), omite 2 de 4 skills (`ideas_creativas`, `chat`). Regla memory 2026-07-02 violada.
+- **Deps: el combo de la era Gradio 5.6 está OBSOLETO.** El stack real es `gradio>=6.19,<7.0` + `huggingface_hub>=1.2,<2.0` + Python 3.11, sin pins pydantic/jinja2. `scripts/test_app.py` valida que `huggingface_hub` NO se pinee `<1.0` con Gradio 6. **No reintroducir los pins viejos** (rompería deploy + tests).
+- `scripts/test_app.py` invariantes: firma `responder()` (2 args → dict), `theme=`/`css=` solo en `.launch()`, sin `type=` kwarg, ChatInterface dentro de Blocks.
+- El Space HF free tiene filesystem **efímero** → el seed debe reseedearse en cada boot; venta de "tu restaurante" = instancia privada del cliente (servicio pago).
+
+**Artefactos SDD creados:**
+- `openspec/changes/producto-vendible/explore.md` ✅
+- `openspec/changes/producto-vendible/proposal.md` ✅ (aprobado)
+- `openspec/changes/producto-vendible/specs/producto-vendible/spec.md` ✅ (21 RFs, 11 escenarios)
+- `openspec/changes/producto-vendible/designs/producto-vendible/design.md` ✅
+
+**Nota de proceso (lección para futuras delegaciones):** `sdd-design` crasheó 2 veces (grep/ripgrep no disponible en el entorno + OOM "JavaScript heap out of memory") sin persistir el artifact. **Workaround aplicado:** el orquestador completó el design con evidencia de primera mano. Para fases de escritura pesada (design/tasks), considerar delegar con tareas más acotadas o hacerlas inline si el entorno del subagente falla.
+
+**Pendiente inmediato:** `sdd-tasks` → `sdd-apply` (3 commits: C1 seed+test, C2 indicador+description, C3 landing trilingüe+assets, C4 memory/README) → `sdd-verify` → `sdd-sync`/`sdd-archive`. Push de app a `hf` + origin; landing solo a origin; `openspec/` nunca a `hf`.
+
+### 2026-08-05 — D5: el stack real de deps es la fuente de verdad (el combo 5.6 quedó obsoleto)
+
+**Contexto:** durante el explore del change `producto-vendible` se verificó que el combo de deps documentado en la deploy saga (era Gradio 5.6: `gradio>=5.6,<6.0`, `huggingface_hub<1.0`, `pydantic==2.10.6`, `jinja2<3.1.0`) **ya fue migrado y NO debe reintroducirse**.
+
+**Stack vigente (fuente de verdad = `requirements.txt` + frontmatter del README del Space):**
+- `gradio>=6.19,<7.0` (frontmatter `sdk_version: 6.19.0`)
+- `huggingface_hub>=1.2,<2.0` (Gradio 6.19 ya no usa `HfFolder`)
+- `python_version: '3.11'` (obligatorio — HF default 3.13 rompe Gradio)
+- Sin pins de `pydantic` ni `jinja2`
+
+**Por qué no reintroducir el combo 5.6:** `scripts/test_app.py` (`test_kwarg_prohibidos`) falla explícitamente si `huggingface_hub` está pineado `<1.0` con `gradio>=6`; y el deploy saga de 2026-07-01 ya demostró que Gradio 4.x/5.6 es una trampa de versiones en HF moderno.
+
+**Lecciones estructurales de la deploy saga que SIGUEN vigentes:** Python 3.11 obligatorio, `cache_examples=False`, defensa en profundidad, no confiar en defaults de HF, reescribir > portear en cambios de versión mayor de UI.
+
+**Aplicado en Fase 1:** `requirements.txt` no se tocó (CA-10); C1/C2 se desplegaron a HF sin cambios de deps.

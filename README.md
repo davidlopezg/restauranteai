@@ -14,7 +14,7 @@ short_description: "Chef IA: fichas y proceso creativo"
 
 # 🍂 Chef Creativo — RestaurantEAI
 
-> Estado: **MVP-3** — Chef Creativo con 3 skills (ficha + proceso creativo + ideas creativas), conocimiento del restaurante y carta inyectados automáticamente. Deployado en Hugging Face Spaces. End-to-end con la API oficial de MiniMax.
+> Estado: **MVP-3** — Chef Creativo con 4 skills (ficha + proceso creativo + ideas creativas + chat), conocimiento del restaurante y carta inyectados automáticamente. Deployado en Hugging Face Spaces. End-to-end con la API oficial de MiniMax.
 
 **¿Qué es?** Ecosistema de agentes IA para restauración. El **Chef Creativo** ofrece tres modos, todos con conocimiento automático de tu restaurante (ticket, línea culinaria, carta) y catálogo de platos:
 
@@ -58,7 +58,7 @@ short_description: "Chef IA: fichas y proceso creativo"
 | MVP-0: Agente Chef Creativo (CLI local) | ✅ | Validado end-to-end |
 | MVP-0.5: Deploy en Hugging Face Space | ✅ | https://huggingface.co/spaces/davidlopezgamero/RestaurantEAI |
 | MVP-1: Landing page | ✅ | `docs/index.html` |
-| MVP-1.1: Sistema de skills | ✅ | 3 skills: ficha, proceso_creativo, ideas_creativas |
+| MVP-1.1: Sistema de skills | ✅ | 4 skills: ficha, proceso_creativo, ideas_creativas, chat |
 | MVP-2: Proceso creativo con state machine | ✅ | 7 fases + persistencia + comandos |
 | MVP-3: Ideas creativas | ✅ | 10 ideas + iteración con métodos ElBulli + ficha |
 | Conocimiento automático del restaurante | ✅ | restaurante.json + catalogo_platos.json inyectados al chef |
@@ -77,9 +77,9 @@ short_description: "Chef IA: fichas y proceso creativo"
 
 ## Diagrama de flujo
 
-El diagrama de flujo completo del sistema (init phase, 3 skills, persistencia, detección de idioma, destinos) está en [`docs/FLOW.md`](docs/FLOW.md). Es un diagrama Mermaid — abrílo en [mermaid.live](https://mermaid.live/) o cualquier visor Mermaid para verlo renderizado.
+El diagrama de flujo completo del sistema (init phase, 4 skills, persistencia, detección de idioma, destinos) está en [`docs/FLOW.md`](docs/FLOW.md). Es un diagrama Mermaid — abrílo en [mermaid.live](https://mermaid.live/) o cualquier visor Mermaid para verlo renderizado.
 
-**Resumen del flujo en una línea**: Init phase (carga restaurante + carta) → Knowledge inyectado automáticamente en cada skill → 3 skills disponibles (ficha / proceso creativo / ideas creativas) → Detección de idioma con reintentos → Deploy a HF Space + backup en GitHub.
+**Resumen del flujo en una línea**: Init phase (carga restaurante + carta) → Knowledge inyectado automáticamente en cada skill → 4 skills disponibles (ficha / proceso creativo / ideas creativas / chat) → Detección de idioma con reintentos → Deploy a HF Space + backup en GitHub.
 
 
 ## Quick start (local)
@@ -122,7 +122,7 @@ python -m agents.init_phase
 
 Te hace 15 preguntas sobre el restaurante + te permite pegar tu carta/menú completo (recomendado) o meter los platos uno a uno. Genera `.agent_knowledge/restaurante.json` y `.agent_knowledge/catalogo_platos.json`.
 
-### 5. Probar las 3 skills
+### 5. Probar las 4 skills
 
 **Modo interactivo** (selector de skill al inicio):
 
@@ -437,7 +437,7 @@ Cada vez que genera una ficha o trabaja una fase, el system prompt se enriquece 
 restauranteia/
 ├── agents/
 │   ├── creativo/                       # Agente Chef Creativo
-│   │   ├── agent.py                    # Entry point CLI + handlers de las 3 skills
+│   │   ├── agent.py                    # Entry point CLI + handlers de las 4 skills
 │   │   ├── skills.py                   # Registry de skills (extensible)
 │   │   ├── proceso_creativo.py         # State machine de 7 fases + persistencia
 │   │   ├── sessions.py                 # CRUD de sesiones en .agent_knowledge/
