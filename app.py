@@ -328,63 +328,22 @@ def _responder_chat(mensaje: str) -> dict:
 
 
 # ---------------------------------------------------------------------------
-# UI con Gradio 5+
-# ---------------------------------------------------------------------------
-
-# Lista dinámica de skills (cargada del registry)
-SKILLS = list_skills()
-SKILL_CHOICES = skill_names_for_ui()  # [(key, nombre_visible), ...]
-
-# Ejemplos para la skill 'ficha' (la default). Los de otras skills viven en skills.py.
-EJEMPLOS_FICHA = next(
-    s["ejemplos"] for s in SKILLS if s["key"] == "ficha"
-)
-
-CUSTOM_CSS = """
-#titulo {
-    text-align: center;
-    margin-bottom: 0.5em;
-}
-footer {visibility: hidden}
-"""
-
-
-# Gradio 6.19+ cambió varias cosas:
-#   - 'theme' y 'css' NO van al gr.Blocks() constructor, van al .launch()
-#   - ChatInterface no acepta 'type' (ya no existe como kwarg)
-#   - Chatbot no acepta 'type' (en 6 es default 'messages' automático)
-#   - Mi responder() ya devuelve dict {role, content}, así que messages es el default natural
-#   - additional_inputs pasa inputs adicionales al fn (aca: selector de skill)
-with gr.Blocks() as demo:
-    skill_selector = gr.Radio(
-        choices=SKILL_CHOICES,
-        value="ficha",
-        label="¿Qué necesitás del chef?",
-        info=(
-            "Ficha técnica: respuesta estructurada directa. "
-            "Proceso creativo: muestra paso a paso cómo piensa el chef, después la ficha."
-        ),
-    )
-    gr.ChatInterface(
-        fn=responder,
-        title="🍂 Chef Creativo — RestaurantEAI",
-        cache_examples=False,
-        description=(
-            "Generador de fichas culinarias con IA. Pedime un plato en lenguaje natural "
-            "y te devuelvo nombre, historia, ficha técnica, maridaje y prompt para imagen. "
-            "Cambiá el selector de arriba para ver el proceso creativo paso a paso."
-        ),
-        examples=[[e] for e in EJEMPLOS_FICHA],  # lista de listas: [ejemplo_texto] cuando hay additional_inputs
-        additional_inputs=[skill_selector],
-        chatbot=gr.Chatbot(
-            avatar_images=(None, "🍂"),
-        ),
-    )
-
-
-# ---------------------------------------------------------------------------
 # Seed demo (Fase 1 — producto-vendible)
 # ---------------------------------------------------------------------------
+
+def _estado_perfil() -> str:
+    """Devuelve el texto del indicador de perfil según restaurante.json."""
+    try:
+        restaurante = load_restaurante()
+    except FileNotFoundError:
+        return "*(sin contexto de restaurante)*"
+    nombre = (restaurante.get("nombre") or "").strip()
+    if restaurante.get("demo"):
+        return f"🧪 **Demo**: {nombre or 'Restaurante de demostración'} — perfil de ejemplo precargado."
+    if nombre:
+        return f"🍽️ **Perfil activo**: {nombre}"
+    return "*(sin contexto de restaurante)*"
+
 
 def _seed_demo_profile() -> None:
     """Boot no-TTY: copia el perfil demo a .agent_knowledge/ si falta (idempotente).
@@ -421,6 +380,67 @@ def _seed_demo_profile() -> None:
 
 
 # ---------------------------------------------------------------------------
+# UI con Gradio 5+
+# ---------------------------------------------------------------------------
+
+# Lista dinámica de skills (cargada del registry)
+SKILLS = list_skills()
+SKILL_CHOICES = skill_names_for_ui()  # [(key, nombre_visible), ...]
+
+# Ejemplos para la skill 'ficha' (la default). Los de otras skills viven en skills.py.
+EJEMPLOS_FICHA = next(
+    s["ejemplos"] for s in SKILLS if s["key"] == "ficha"
+)
+
+CUSTOM_CSS = """
+#titulo {
+    text-align: center;
+    margin-bottom: 0.5em;
+}
+footer {visibility: hidden}
+"""
+
+
+# Gradio 6.19+ cambió varias cosas:
+#   - 'theme' y 'css' NO van al gr.Blocks() constructor, van al .launch()
+#   - ChatInterface no acepta 'type' (ya no existe como kwarg)
+#   - Chatbot no acepta 'type' (en 6 es default 'messages' automático)
+#   - Mi responder() ya devuelve dict {role, content}, así que messages es el default natural
+#   - additional_inputs pasa inputs adicionales al fn (aca: selector de skill)
+with gr.Blocks() as demo:
+    # Indicador de perfil (design D3) + link a la landing (T2.2/T2.4).
+    # _estado_perfil() se evalúa al construir la UI; en __main__ se re-evalúa
+    # tras el seed no-TTY (riesgo T4): un boot frío del Space todavía no tiene
+    # restaurante.json cuando el Blocks se construye a nivel de módulo.
+    perfil_md = gr.Markdown(_estado_perfil())
+    gr.Markdown("  ·  [🌐 Volver a la web](https://davidlopezg.github.io/restauranteai/)")
+    skill_selector = gr.Radio(
+        choices=SKILL_CHOICES,
+        value="ficha",
+        label="¿Qué necesitás del chef?",
+        info=(
+            "Ficha técnica: respuesta estructurada directa. "
+            "Proceso creativo: muestra paso a paso cómo piensa el chef, después la ficha."
+        ),
+    )
+    gr.ChatInterface(
+        fn=responder,
+        title="🍂 Chef Creativo — RestaurantEAI",
+        cache_examples=False,
+        description=(
+            "Generador de fichas culinarias con IA. Elige un modo y prueba con la demo "
+            "(restaurante mediterráneo de ejemplo) o pide algo a tu medida. "
+            "Modos: Ficha técnica · Proceso creativo · Ideas creativas · Chat con el chef."
+        ),
+        examples=[[e] for e in EJEMPLOS_FICHA],  # lista de listas: [ejemplo_texto] cuando hay additional_inputs
+        additional_inputs=[skill_selector],
+        chatbot=gr.Chatbot(
+            avatar_images=(None, "🍂"),
+        ),
+    )
+
+
+# ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------
 
@@ -447,6 +467,11 @@ if __name__ == "__main__":
     # Carga del contexto (ya disponible para todos los agentes)
     restaurante = cargar_restaurante()
     logger.info(f"Restaurante cargado: {restaurante.get('nombre', '(sin nombre)')}")
+
+    # El Blocks se construye a nivel de módulo, ANTES del seed de __main__, así
+    # que re-evaluamos el indicador ya con el perfil seedeado (riesgo T4 del
+    # design): sin esto, un boot frío del Space mostraría "(sin contexto)".
+    perfil_md.value = _estado_perfil()
 
     demo.launch(
         server_name="0.0.0.0",
