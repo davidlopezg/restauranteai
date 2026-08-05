@@ -383,34 +383,66 @@ with gr.Blocks() as demo:
 
 
 # ---------------------------------------------------------------------------
+# Seed demo (Fase 1 — producto-vendible)
+# ---------------------------------------------------------------------------
+
+def _seed_demo_profile() -> None:
+    """Boot no-TTY: copia el perfil demo a .agent_knowledge/ si falta (idempotente).
+
+    IMPORTANTE: `guardar_restaurante()`/`guardar_catalogo()` en
+    agents/knowledge_context.py sobrescriben SIEMPRE (open("w") incondicional), así
+    que este helper guarda SOLO el archivo que falta, vía `restaurante_existe()` /
+    `catalogo_existe()`: nunca pisa un perfil real existente con el demo (RF-13).
+    """
+    import json  # app.py no importa json al tope
+
+    from agents.knowledge_context import (
+        restaurante_existe,
+        catalogo_existe,
+        guardar_restaurante,
+        guardar_catalogo,
+    )
+    from agents.init_phase import _schema_doc_restaurante, _schema_doc_catalogo
+
+    demo_dir = Path(__file__).resolve().parent / "agents" / "creativo" / "knowledge"
+    demo_rest = json.loads(
+        (demo_dir / "demo_restaurante.json").read_text(encoding="utf-8")
+    )
+    demo_cat = json.loads(
+        (demo_dir / "demo_catalogo_platos.json").read_text(encoding="utf-8")
+    )
+
+    if not restaurante_existe():
+        guardar_restaurante(demo_rest, _schema_doc_restaurante())
+    if not catalogo_existe():
+        guardar_catalogo(demo_cat, _schema_doc_catalogo())
+
+    logger.info("Perfil demo genérico seedeado (no-TTY boot).")
+
+
+# ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
     # Bootstrap del contexto compartido del restaurante.
     # En un entorno interactivo (TTY local), pregunta.
-    # En HF Spaces (sin TTY), genera archivos vacíos con warning.
+    # En HF Spaces (sin TTY), seedea el perfil demo genérico (RF-13).
     from agents.knowledge_context import (
         bootstrap_necesario,
         cargar_restaurante,
-        guardar_restaurante,
-        guardar_catalogo,
     )
-    from agents.init_phase import _schema_doc_restaurante, _schema_doc_catalogo
 
     if bootstrap_necesario():
         if sys.stdin.isatty():
             from agents.init_phase import fase_init_interactiva
             fase_init_interactiva()
         else:
-            # HF Space o CI: sin TTY. Generamos vacíos + warning.
-            logger.warning(
-                "Knowledge base no inicializada. "
-                "Para personalizarla, corré localmente: python -m agents.init_phase"
-            )
-            guardar_restaurante({}, _schema_doc_restaurante())
-            guardar_catalogo([], _schema_doc_catalogo())
-            logger.info("Archivos vacíos generados automáticamente.")
+            # HF Space o CI: sin TTY. Seed de perfil demo genérico (RF-13).
+            # _seed_demo_profile() es idempotente y guarda SOLO el archivo que
+            # falta: guardar_* sobrescribe siempre, así que no debe tocar un
+            # perfil real existente.
+            _seed_demo_profile()
 
     # Carga del contexto (ya disponible para todos los agentes)
     restaurante = cargar_restaurante()
