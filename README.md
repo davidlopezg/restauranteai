@@ -26,19 +26,39 @@ short_description: "Chef IA: fichas y proceso creativo"
 
 </div>
 
-> Estado: **MVP-3** — Chef Creativo con 4 skills (ficha + proceso creativo + ideas creativas + chat), conocimiento del restaurante y carta inyectados automáticamente. Deployado en Hugging Face Spaces. End-to-end con la API oficial de MiniMax.
+## 🤔 ¿Renovar la carta te lleva semanas? ¿Los platos nuevos no sorprenden?
 
-**¿Qué es?** Ecosistema de agentes IA para restauración. El **Chef Creativo** ofrece tres modos, todos con conocimiento automático de tu restaurante (ticket, línea culinaria, carta) y catálogo de platos:
+El **Chef Creativo** es un agente IA que piensa cada plato contigo, con el contexto de **tu** restaurante (ticket medio, línea culinaria, carta actual, temporada) siempre presente. No es un generador genérico: conoce tu casa y propone platos que **no duplican** la carta y **llenan huecos**.
 
-1. 🍂 **Ficha técnica** — Una petición → ficha estructurada (nombre, historia, ficha técnica, maridaje, prompt de imagen).
-2. 🧠 **Proceso creativo** — State machine de 7 fases que muestra **cómo piensa el chef** paso a paso, con persistencia entre sesiones y comandos para iterar.
-3. 💡 **Ideas creativas** — 10 ideas variadas para explorar (renovar carta, ideas de temporada, llenar huecos), con refinamiento vía métodos creativos de ElBulli.
+> 🍂 *“Risotto cremoso de setas de temporada con trufa negra laminada al emplatar. La cremosidad del Carnaroli dialoga con el umami del boletus y los trompetas del Montseny; el Barolo joven envuelve sin imponerse.”*
+>
+> — Fragmento de ficha generada por el Chef Creativo, modo Ficha técnica
 
-**¿Cómo se usa?** Abrí el chat, elegí el modo en el selector de arriba a la izquierda, y escribí tu petición.
+**Probá la demo en vivo** (sin registro, con perfil de ejemplo): [huggingface.co/spaces/davidlopezgamero/RestaurantEAI](https://huggingface.co/spaces/davidlopezgamero/RestaurantEAI) · [landing oficial](https://davidlopezg.github.io/restauranteai/)
 
-- **Modo Ficha**: `"Entrante vegetariano con calabaza y queso de cabra"`
-- **Modo Proceso creativo**: `"Risotto de setas con trufa"` y avanzás fase por fase
-- **Modo Ideas creativas**: `"Ideas para otoño"` y recibís 10 ideas iterables
+---
+
+## 🍂 ¿Qué hace el chef?
+
+El Chef Creativo ofrece **4 modos**, todos con conocimiento automático de tu restaurante (15 dimensiones de contexto + carta inyectada en cada respuesta):
+
+| Modo | Qué hace | Cuándo usarlo |
+|---|---|---|
+| 🍂 **[Ficha técnica](#sistema-de-skills)** | Una petición → ficha estructurada (nombre, historia, ficha técnica, maridaje, prompt de imagen). | Ya sabés qué ficha querés. |
+| 🧠 **[Proceso creativo](#proceso-creativo-state-machine)** | State machine de 7 fases que muestra **cómo piensa el chef** paso a paso (alma → métodos → equilibrio → técnica → storytelling → descartadas → preguntas). Persistencia entre sesiones. | Querés ver el razonamiento completo antes de la ficha. |
+| 💡 **[Ideas creativas](#ideas-creativas)** | 10 ideas variadas (platos, conceptos, formatos, extensiones). Refinables con 13 métodos creativos de ElBulli (`aplicá deconstrucción a la idea 3`). | Querés **explorar** antes de comprometerte. |
+| 💬 **[Chat con el chef](#)** | Conversación libre sobre producto, técnica, carta, estacionalidad, proveedores. Usa todo el contexto + las ideas que guardaste. | Preguntas abiertas, asesoría. |
+
+> 💡 Los 4 modos comparten la base de conocimiento (perfil del restaurante + carta) y el [Archivo de Ideas](#archivo-de-ideas-módulo-de-memoria): podés guardar ideas con `/guardar` desde cualquier modo y consultarlas después.
+
+**¿Cómo se usa?** Abrí la [demo](https://huggingface.co/spaces/davidlopezgamero/RestaurantEAI), elegí un modo arriba a la izquierda, y escribí tu petición:
+
+- 🍂 **Ficha**: `"Entrante vegetariano con calabaza y queso de cabra"`
+- 🧠 **Proceso creativo**: `"Risotto de setas con trufa"` y avanzás fase por fase
+- 💡 **Ideas creativas**: `"Ideas para otoño"` y recibís 10 ideas iterables
+- 💬 **Chat**: `"¿Qué te parece la alcachofa a la brasa como entrante de primavera?"`
+
+> 💡 Desde cualquier modo podés guardar ideas con `/guardar [texto]` y consultarlas con `/ideas` (módulo de memoria con SQLite local + RGPD desde el día uno).
 
 *(Abajo: documentación técnica completa, diagrama de flujo, cómo correrlo local, estructura, decisiones de diseño.)*
 
@@ -57,7 +77,11 @@ short_description: "Chef IA: fichas y proceso creativo"
 9. [Arquitectura técnica](#arquitectura-técnica)
 10. [Despliegue (HF Space)](#despliegue-hf-space)
 11. [Repos y remotes — Template vs. Instancia viva](#repos-y-remotes--template-vs-instancia-viva)
-12. [Roadmap](#roadmap)
+12. [Tests](#tests)
+13. [Licencia](#licencia)
+14. [Contribuir](#contribuir)
+15. [Roadmap público](#roadmap-público)
+16. [Links](#links)
 
 > 📖 **¿Buscás un comando específico?** Mirá [`docs/COMMANDS.md`](docs/COMMANDS.md) — índice completo de entry points, comandos in-session, scripts, y paths importantes.
 
@@ -80,10 +104,12 @@ short_description: "Chef IA: fichas y proceso creativo"
 | Fix de surrogate UTF-8 | ✅ | Encoding correcto de emoji en payload |
 | **Fase 4: Archivo de Ideas (módulo de memoria)** | ✅ | SQLite local + 11 comandos transversales + consent explícito |
 | Patrón template → live instance | ✅ | Repo público + repo privado sincronizable |
-| Fase 4.1: Memoria enriquecida / categorías / RGPD | ⏳ | Backlog |
-| Resto de agentes (Producción, Marketing, etc.) | ⏳ | Backlog |
-| Resto de agentes (Producción, Marketing, etc.) | ⏳ | Backlog |
-| SaaS + monetización | ⏳ | Cuando haya tracción real |
+| Producto vendible (Fase 1) | ✅ | Perfil demo + landing trilingüe + app polish + CI |
+| `init-web` (configurar restaurante en navegador) | 🚧 | En curso ([SDD abierto](openspec/changes/init-web/)) |
+| Memoria enriquecida (FTS5, categorías auto) | ⏳ | Backlog |
+| Capturas reales de la 4ª skill (`chat`) | ⏳ | Mejora pendiente |
+| Resto de agentes (Producción, Marketing) | ⏳ | Backlog — cada uno es un proyecto aparte |
+| SaaS multi-tenant | ⏳ | Diferido hasta tracción real |
 
 ---
 
@@ -748,11 +774,47 @@ python scripts/probar_estructura.py
 
 ## Licencia
 
-MIT. Ver `LICENSE` cuando se agregue formalmente.
+**MIT**. Ver el archivo [`LICENSE`](LICENSE) para el texto completo. © 2026 David López Gamero.
+
+Esto significa que podés usar, copiar, modificar, fusionar, publicar, distribuir, sublicenciar y/o vender copias del software, **siempre que mantengas el aviso de copyright y la licencia**. Sin garantía de ningún tipo.
 
 ## Contribuir
 
-Por definir. El proyecto está en fase temprana.
+¿Querés sumar? Leé **[CONTRIBUTING.md](CONTRIBUTING.md)** (5 min): setup local, cómo correr los 132 tests, las 5 reglas duras (sin datos reales, sin API keys, etc.), cómo extender skills/init/métodos, y el patrón SDD para cambios grandes.
+
+¿Encontraste un bug o tenés una idea? Abrí un issue con las plantillas de [`.github/ISSUE_TEMPLATE/`](.github/ISSUE_TEMPLATE/). Para PRs, seguí la [plantilla](.github/PULL_REQUEST_TEMPLATE.md).
+
+Antes de mergear, todos los PRs pasan por **[CI (GitHub Actions)](.github/workflows/tests.yml)** que corre las 3 suites en Python 3.11.
+
+Por favor, leé también nuestro **[Código de Conducta](CODE_OF_CONDUCT.md)** (Contributor Covenant v2.1). Para temas de seguridad, no abras un issue público: seguí la **[política de seguridad](SECURITY.md)**.
+
+---
+
+## 🗺️ Roadmap público
+
+> Roadmap vivo. Lo que está planeado y el orden aproximado. Cambia según tracción y feedback.
+
+### ✅ Ya shipped (v1.x)
+- **v1.4.0** (2026-08-05) — Producto vendible: perfil demo, landing trilingüe, app polish, [landing live](https://davidlopezg.github.io/restauranteai/).
+- **v1.3.0** (2026-07-02) — Módulo de Memoria (Archivo de Ideas) + skill `chat` + script de sync template↔live.
+- **v1.2.0** (2026-07-02) — Sistema de skills extensible + proceso creativo de 7 fases + ideas creativas con métodos de ElBulli.
+- **v1.1.0** (2026-07-01) — HF Space público + UI Gradio.
+- **v1.0.0** (2026-06-30) — Agente CLI local + integración MiniMax API.
+
+### 🚧 En curso
+- **`init-web`** (change SDD abierto) — Pestaña "Configurar mi restaurante" en el navegador para que un hostelero no técnico pueda configurar su perfil y carta sin terminal. El núcleo (`init_phase.py`) ya es data-driven; falta la UI web.
+
+### 🔮 Próximo
+- **Búsqueda full-text (FTS5) en el Archivo de Ideas** — para encontrar ideas guardadas por palabras clave con ranking.
+- **Categorización automática de ideas** vía LLM (categoría sugerida al guardar, editable).
+- **Más capturas reales** en la landing (4ª skill "Chat con el chef" + variantes de las 3 actuales).
+- **Landing en más idiomas** — francés, portugués, italiano según demanda.
+
+### ⏳ Diferido hasta tracción real
+- **Más agentes** (Producción, Marketing, Costes) — cada uno es un proyecto aparte; primero queremos validar el Chef con usuarios reales.
+- **SaaS multi-tenant** — el modelo actual (open core: software gratis + servicio de implementación pago) es deliberadamente low-overhead; el SaaS aparece solo si el modelo de servicio no escala.
+
+**Cómo proponer features**: [issue con la plantilla `feature_request`](.github/ISSUE_TEMPLATE/feature_request.yml). **Cómo votar**: usá las reacciones (👍) en el issue para mostrar prioridad.
 
 ---
 
