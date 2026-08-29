@@ -134,12 +134,15 @@ _RE_GUARDAR_NUM = re.compile(r"^/guardar\s+(\d+)$")
 _RE_GUARDAR_SIMPLE = re.compile(r"^/guardar$")
 _RE_GUARDAR_TEXTO = re.compile(r"^/guardar\s+(.+)$")
 _RE_EDITAR = re.compile(r"^/editar\s+(\d+)\s+(.+)$")
-_RE_IDEAS = re.compile(r"^/ideas(\s+.+)?$")
+# /ideas ahora es del dispatcher principal (genera 10 ideas creativas).
+# El archivo de ideas usa /lista-ideas para listar las guardadas.
+_RE_LISTA_IDEAS = re.compile(r"^/lista-ideas(\s+.+)?$")
 _RE_OLVIDAR_TODO = re.compile(r"^/olvidar\s+todo$")
 _RE_OLVIDAR_N = re.compile(r"^/olvidar\s+(\d+)$")
 _RE_EXPORT = re.compile(r"^/export-ideas$")
 _RE_SILENCIAR = re.compile(r"^/silenciar-contador$")
-_RE_AYUDA = re.compile(r"^/ayuda$")
+# /ayuda lo maneja el dispatcher principal del chat (incluye
+# los comandos del archivo deideas también).
 
 # Confirmation responses (without /)
 _RE_CONFIRMAR_TODO = re.compile(r"^olvidar\s+todo$", re.IGNORECASE)
@@ -154,7 +157,7 @@ _AYUDA_TEXTO = """**Comandos disponibles:**
 `/guardar N` — Guardá la idea número N de una lista numerada.
 `/guardar igual` — Guardá igual si hay advertencia de duplicado.
 `/editar N [nuevo texto]` — Editá una idea guardada.
-`/ideas [filtro]` — Listá tus ideas guardadas.
+`/lista-ideas [filtro]` — Listá tus ideas guardadas.
 `/olvidar todo` — Borrar TODAS las ideas (requiere confirmación).
 `/olvidar N` — Borrar una idea específica (requiere confirmación).
 `/export-ideas` — Exportá tus ideas a un archivo JSON.
@@ -344,8 +347,8 @@ def handle_command(
                 editar_match.group(2).strip(),
             )
 
-        # --- /ideas [filtro] ---
-        ideas_match = _RE_IDEAS.match(mensaje)
+        # --- /lista-ideas [filtro] ---
+        ideas_match = _RE_LISTA_IDEAS.match(mensaje)
         if ideas_match:
             filtro_raw = ideas_match.group(1)
             return _handle_ideas(resolved_conn, filtro_raw)
@@ -400,16 +403,15 @@ def handle_command(
             }
 
         # --- /ayuda ---
-        if _RE_AYUDA.match(mensaje):
-            return {"role": "assistant", "content": _AYUDA_TEXTO}
+        # Lo maneja el dispatcher principal del chat (ver app._texto_ayuda).
+        # Aquí no interceptamos para mantener la transversalidad: el chat
+        # decide qué comandos mostrar.
 
-        # ── Unknown /command ──
-        return {
-            "role": "assistant",
-            "content": format_error(
-                "Comando no reconocido. Escribí `/ayuda` para ver los comandos disponibles."
-            ),
-        }
+        # ── Unknown /command (no es del archivo de ideas) ──
+        # Devolvemos None para que el dispatcher principal del chat decida
+        # si lo maneja o no. Mantiene la transversalidad: el archivo de
+        # ideas solo intercepta SUS comandos, no todos los `/comando`.
+        return None
 
     finally:
         if owned:
@@ -652,7 +654,7 @@ def _handle_ideas(
     conn: Any,
     filtro_raw: Optional[str],
 ) -> dict[str, str]:
-    """Handle ``/ideas [filtro]``."""
+    """Handle ``/lista-ideas [filtro]``."""
     filtro: dict[str, Any] | None = None
     if filtro_raw:
         filtro_texto = filtro_raw.strip()

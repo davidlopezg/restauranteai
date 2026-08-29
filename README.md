@@ -22,11 +22,15 @@ short_description: "Chef IA: fichas y proceso creativo"
 2. 🧠 **Proceso creativo** — State machine de 7 fases que muestra **cómo piensa el chef** paso a paso, con persistencia entre sesiones y comandos para iterar.
 3. 💡 **Ideas creativas** — 10 ideas variadas para explorar (renovar carta, ideas de temporada, llenar huecos), con refinamiento vía métodos creativos de ElBulli.
 
-**¿Cómo se usa?** Abrí el chat, elegí el modo en el selector de arriba a la izquierda, y escribí tu petición.
+**¿Cómo se usa?** Abrí el chat y escribí tu petición. El chef responde con el contexto de tu restaurante siempre presente:
 
-- **Modo Ficha**: `"Entrante vegetariano con calabaza y queso de cabra"`
-- **Modo Proceso creativo**: `"Risotto de setas con trufa"` y avanzás fase por fase
-- **Modo Ideas creativas**: `"Ideas para otoño"` y recibís 10 ideas iterables
+- 🍂 **Ficha técnica**: `/ficha Entrante vegetariano con calabaza y queso de cabra`
+- 🧠 **Proceso creativo**: `/proceso Risotto de setas con trufa` y avanzás fase por fase
+- 💡 **Ideas creativas**: `/ideas Ideas para otoño` y recibís 10 ideas iterables
+- 💬 **Chat libre**: cualquier mensaje sin prefijo (preguntas, asesoría, conversación)
+- `/ayuda` para ver todos los comandos disponibles
+
+> 💡 Desde cualquier modo podés guardar ideas con `/guardar [texto]` y consultarlas con `/lista-ideas` (módulo de memoria con SQLite local + RGPD desde el día uno).
 
 *(Abajo: documentación técnica completa, diagrama de flujo, cómo correrlo local, estructura, decisiones de diseño.)*
 
@@ -292,11 +296,11 @@ Probá estos comandos en el chat (HF Space o CLI, funcionan en cualquier skill):
 ✅ Idea #1 guardada: probar kumquat en el postre de temporada
 📁 1 guardada
 
-/ideas
+/lista-ideas
 #1 | sin categoría | 2026-07-02
 > probar kumquat en el postre de temporada
 
-/ideas queso
+/lista-ideas queso
 #3 | sin categoría | 2026-07-02
 > ensalada de queso de cabra con membrillo
 
@@ -319,7 +323,7 @@ Todos funcionan en **cualquier skill** (ficha, ideas creativas, proceso creativo
 | `/guardar N` | Guarda la idea N de una lista numerada | Funciona tras respuestas con formato "1. ... 2. ... 3. ..." |
 | `/guardar igual` | Fuerza guardado tras advertencia de duplicado | Después de que el sistema detecte fuzzy ≥80% |
 | `/editar N [texto]` | Edita idea existente | Actualiza `updated_at` automáticamente |
-| `/ideas [filtro]` | Lista todas las ideas (desc por fecha) | Filtro opcional busca en el texto |
+| `/lista-ideas [filtro]` | Lista todas las ideas (desc por fecha) | Filtro opcional busca en el texto |
 | `/olvidar N` | Borra idea N (con confirmación) | Dos turnos: primero avisa, después confirmás |
 | `/olvidar todo` | Borra todo (con confirmación) | Útil para empezar de cero |
 | `/export-ideas` | Exporta todas las ideas a JSON | Portable, fácil de respaldar |
@@ -358,7 +362,7 @@ Si necesitás una nueva categoría, agregala al JSON y reiniciá la app.
 
 ### Cómo se almacenan los datos
 
-- **Path**: `.agent_knowledge/ideas.db` (SQLite local).
+- **Path**: `conocimiento/interno_restaurante/ideas.db` (SQLite local).
 - **Modo WAL** (`journal_mode=WAL`): lectores y escritor concurrentes sin bloqueos — crítico para HF Space con múltiples usuarios.
 - **Esquema** (`ideas` table):
   ```
@@ -366,7 +370,7 @@ Si necesitás una nueva categoría, agregala al JSON y reiniciá la app.
   | confirmada_por_usuario | origen | origen_skill
   ```
 - **Índices**: `idx_ideas_created_at`, `idx_ideas_categoria`, `idx_ideas_origen_skill`.
-- **Archivo companion**: `.agent_knowledge/ideas.md` con schema documentado (se autogenera al primer `init_db`).
+- **Archivo companion**: `conocimiento/interno_restaurante/ideas.md` con schema documentado (se autogenera al primer `init_db`).
 
 ### Tests
 
@@ -541,7 +545,7 @@ Para tu **uso real con datos**, mantenés un repo separado, **privado**, sincron
 | Repo | Visibilidad | Propósito | Datos del usuario |
 |---|---|---|---|
 | `davidlopezg/restauranteai` (este) | 🔓 Público | Template: código limpio | ❌ No commitea nada en `.agent_knowledge/` |
-| `davidlopezg/restauranteia-live` | 🔒 Privado | Tu instancia viva: código + datos reales | ✅ Commitea `.agent_knowledge/ideas.db`, `restaurante.json`, etc. |
+| `davidlopezg/restauranteia-live` | 🔒 Privado | Tu instancia viva: código + datos reales | ✅ Commitea `conocimiento/interno_restaurante/ideas.db`, `restaurante.json`, etc. |
 
 ### Set up de la instancia viva (una sola vez)
 
