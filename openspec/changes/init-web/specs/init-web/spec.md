@@ -69,13 +69,15 @@ Exponer la configuración del restaurante (perfil + carta) en una pestaña web d
 
 **RF-8**: la edición se valida contra los valores válidos de `init_options.json` antes de guardar. Inputs inválidos se marcan en rojo y "Guardar" queda deshabilitado.
 
-### Edición del catálogo (RF-9..RF-11)
+### Edición del catálogo (RF-9..RF-12)
 
 **RF-9**: el catálogo se muestra en un `gr.Dataframe` con columnas `nombre | categoria | descripcion | precio`. Editable (`interactive=True`).
 
 **RF-10**: hay 3 botones: "Agregar fila", "Borrar fila(s) seleccionada(s)", "Restaurar catálogo demo".
 
 **RF-11**: si el catálogo tiene >100 platos, se muestra un warning + las primeras 100 filas. Paginación en v2.
+
+**RF-12**: **paginación a 25 filas por página** (`gr.Dataframe` + control de página) + `gr.Textbox` de **búsqueda en vivo** que filtra por `nombre`, `categoria` o `descripcion` (case-insensitive, LIKE SQL). El filtrado es solo visual, no afecta a la DB.
 
 ### Modo "pegar carta completa" (RF-12..RF-14)
 
@@ -107,6 +109,24 @@ Exponer la configuración del restaurante (perfil + carta) en una pestaña web d
 **RF-20**: en la pestaña "Configurar" hay un `gr.Markdown` siempre visible en la parte superior:
 
 > ⚠️ **Importante**: el HF Space free duerme los procesos después de un rato de inactividad. Tu configuración se pierde cuando el Space se reinicia. Para uso real, montá tu instancia privada (ver [`SECURITY.md`](../../../SECURITY.md) o escribime a davidlopezgamero@gmail.com).
+
+### Vista de JSON crudo (RF-23)
+
+**RF-23**: hay un `gr.Group(visible=False)` colapsable "Ver JSON" en la pestaña Configurar que muestra:
+- `restaurante.json` formateado con indent=2 y syntax highlighting (vía `<pre><code>`).
+- `catalogo_platos.json` formateado igual.
+- Botón "Copiar" al lado de cada uno (usa `gr.Button` + handler que llama a JS `navigator.clipboard.writeText()`).
+- Solo lectura. La edición se hace por los widgets, no por el JSON.
+
+### Autenticación (RF-24..RF-26)
+
+**RF-24**: el Space usa **HF OAuth nativo** vía `gr.launch(auth=...)`. Gradio 6.19 lo soporta out-of-the-box en HF Spaces: cualquier visitante con cuenta de HF puede pasar.
+
+**RF-25**: la pestaña "Chat" sigue siendo **pública** (sin restricción). Solo la pestaña "Configurar" requiere auth.
+
+**RF-26**: si el visitante no está autenticado y hace click en "Configurar", se le muestra un `gr.Markdown`:
+
+> 🔒 Esta sección requiere autenticación con Hugging Face. [Iniciá sesión](link-a-gr-launch-auth) para acceder.
 
 ### Tests (RF-21)
 
@@ -223,16 +243,23 @@ Exponer la configuración del restaurante (perfil + carta) en una pestaña web d
 
 ## Decisiones pendientes (deben cerrarse antes de `sdd-design`)
 
-Las 6 preguntas del proposal (asunciones por defecto en negrita, alternativa entre paréntesis):
+~~Las 6 preguntas del proposal~~: **DECIDIDAS POR DAVID (2026-08-29)**.
 
-1. **Q1 — Autenticación**: **pública** (con auth básica HF OAuth).
-2. **Q2 — Catálogo**: **gr.Dataframe** (lista virtualizada).
-3. **Q3 — Restaurar demo**: **sí** (no incluir).
-4. **Q4 — JSON crudo**: **solo lectura en v1** (edición completa).
-5. **Q5 — Pegar carta**: **sí** (diferir a v2).
-6. **Q6 — Idioma**: **castellano neutro peninsular** (mantener voseo).
+1. **Q1 — Autenticación**: REQUERIDA vía **HF OAuth** (la nativa de Hugging Face Spaces). No requiere infra extra, aprovecha que el visitante ya tiene cuenta HF. Suposición original ("pública") **DESCARTADA**.
+2. **Q2 — Catálogo**: `gr.Dataframe` con **paginación a 25 filas por página** + `gr.Textbox` de **búsqueda en vivo** (filtra por nombre/categoría/descripcion).
+3. **Q3 — Restaurar demo**: SÍ, según propuesta original.
+4. **Q4 — JSON crudo**: `gr.Group` colapsable con JSON **formateado y bonito** + botón **"Copiar"** al portapapeles. Solo lectura.
+5. **Q5 — Pegar carta**: SÍ, según propuesta original.
+6. **Q6 — Idioma**: castellano neutro peninsular.
 
-Si David no contesta antes de `sdd-design`, **se mantienen las asunciones por defecto**.
+### Implicación de Q1 (auth)
+
+El Space actualmente es público. Agregar HF OAuth implica:
+
+- **Cambio en `app.py`**: usar `gr.ChatInterface(..., auth=[...])` o `gr.Blocks(...).launch(auth=...)`. HF Spaces soporta OAuth nativo via la integración de Gradio.
+- **Restricción de la pestaña "Configurar"**: solo accesible para usuarios autenticados. La pestaña "Chat" puede seguir siendo pública (decisión de UX).
+- **Nueva sección en SECURITY.md**: aclarar que el OAuth es solo para evitar edición no deseada por terceros, no para proteger secretos (los secretos están en HF Secrets).
+- **Sin cambios en la lógica de negocio**: HF OAuth solo agrega un "filtro" en la UI, no toca `init_phase.py` ni `knowledge_context.py`.
 
 ## Riesgos y mitigaciones
 
@@ -258,20 +285,21 @@ Si David no contesta antes de `sdd-design`, **se mantienen las asunciones por de
 
 | Área | Líneas estimadas |
 |---|---|
-| `app.py` (pestaña + handlers) | +300-400 |
+| `app.py` (pestaña + handlers + auth) | +350-450 |
 | `scripts/test_init_web.py` | +120-150 |
 | `agents/knowledge_context.py` (helpers de carga con guard) | +30-50 |
+| `SECURITY.md` (sección auth) | +10-15 |
 | `docs/index.html` (copy open core) | +5-10 |
 | `CHANGELOG.md` (entrada v1.5.0) | +25-30 |
 | `README.md` (estado del proyecto + roadmap) | +5-10 |
 | `VERSION` | +1 |
-| **Total** | **~485-650** |
+| **Total** | **~545-715** |
 
 Estrategia slicing (stacked PRs, cada uno < 400 líneas):
 
-- **PR 1 — Backend helpers**: `agents/knowledge_context.py` (carga/guarda con guard por archivo) + tests.
-- **PR 2 — UI web**: pestaña en `app.py` + handlers.
-- **PR 3 — Tests + docs**: `scripts/test_init_web.py` + updates de CHANGELOG/README/landing/VERSION.
+- **PR 1 — Backend helpers**: `agents/knowledge_context.py` (carga/guarda con guard por archivo) + tests de carga.
+- **PR 2 — UI web**: pestaña en `app.py` + handlers + auth integration.
+- **PR 3 — Tests + docs**: `scripts/test_init_web.py` + updates de CHANGELOG/README/landing/SECURITY/VERSION.
 
 Cada PR mergeado antes del siguiente. Cada PR self-verifica con su suite.
 

@@ -69,16 +69,16 @@ Este change entrega la **primera capa de auto-servicio**: una pestaña "Configur
 | Sincronización bidireccional con CLI `init_phase` | Solo lectura del JSON generado por CLI en v1. |
 | Cambio del Space UI a otro idioma | Castellano neutro en v1 (la landing es trilingüe; el Space sigue monolingüe). |
 
-## Decisiones de producto (a cerrar con David)
+## Decisiones de producto (cerradas con David — 2026-08-29)
 
-> **Por defecto asumo**; David puede cambiarlas antes de `sdd-spec`:
+> ✅ Decididas. Locked-in para `sdd-spec` y siguientes.
 
-1. **Sin autenticación**: la pestaña Configurar es pública. La demo es "juguete + evaluación", no "uso real". El uso serio es en instancia privada del cliente.
-2. **Catálogo con `gr.Dataframe`**: mejor balance funcionalidad/simplicidad. Lista virtualizada queda para v2.
-3. **Botón "Restaurar perfil demo"**: feature explícita para usuarios que juegan y quieren volver al estado inicial.
-4. **Edición JSON crudo solo lectura en v1**: suficiente para inspección, sin abrir superficie de error.
-5. **Modo "pegar carta" disponible en la UI web**: reusa `_extraer_platos_de_carta()` que ya existe.
-6. **Espacio de la UI del Space: castellano neutro peninsular** (consistente con decisión 10 del proposal `producto-vendible`).
+1. **Auth REQUERIDA vía HF OAuth** (nativa de Gradio en HF Spaces). Descarta la suposición original "pública". Solo la pestaña "Configurar" requiere auth; "Chat" sigue siendo pública.
+2. **Catálogo con `gr.Dataframe` + paginación a 25 filas + búsqueda en vivo** (`gr.Textbox` filtra por nombre/categoría/descripcion).
+3. **Botón "Restaurar perfil demo"**: sí.
+4. **JSON crudo**: `gr.Group` colapsable con JSON formateado + **botón Copiar** al portapapeles. Solo lectura.
+5. **Modo "pegar carta"**: sí.
+6. **Idioma del Space**: castellano neutro peninsular.
 
 ## Criterios de aceptación (tentativos, se afinan en `sdd-spec`)
 
