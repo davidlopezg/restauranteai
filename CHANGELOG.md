@@ -9,14 +9,55 @@ Todos los cambios notables de **RestaurantEAI** (alias local: `restauranteia`) s
 
 ---
 
+## [1.5.0] — 2026-08-29 — "init-web: Configurar mi restaurante"
+
+> Pestaña web en el HF Space para configurar el restaurante y la carta sin tocar terminal. Cierra la **Fase 2 del producto vendible**.
+
+### Added
+- Pestaña **"⚙️ Configurar mi restaurante"** en el HF Space (`gr.Tabs(Chat, Configurar)`). Self-service del hostelero en navegador.
+- Módulo nuevo `app_init_web.py` (~520 líneas) con render data-driven desde `PREGUNTAS_RESTAURANTE` y `PREGUNTAS_POR_PLATO`.
+- Helpers de carga/guarda con guard + backup en `agents/knowledge_context.py`: `cargar_restaurante_con_default`, `cargar_catalogo_con_default`, `guardar_con_backup`, `guardar_catalogo_con_backup`, `leer_con_backup_dir`. Mitigan el bug F1 (sobrescritura cruzada de `guardar_*`).
+- Modo **"Pegar carta completa"**: extracción LLM desde texto libre con feedback visual (`gr.Markdown`).
+- Búsqueda en vivo del catálogo (case-insensitive sobre nombre/categoría/descripción) + paginación a 25 filas.
+- Confirmación obligatoria antes de sobrescribir un perfil real (`gr.Group` + `gr.Checkbox`).
+- Botón **"Restaurar perfil demo"** con doble-check (`solo funciona si demo=true`).
+- Vista **"Ver JSON"** colapsable con `restaurante.json` + `catalogo_platos.json` formateados.
+- Auth básica (`auth=(user, password)`) en `.launch()` leída de env vars (`CONFIG_USER`, `CONFIG_PASSWORD`) configurables como Secrets de HF. La pestaña "Chat" sigue pública.
+- Tests `scripts/test_init_web.py` con 8/8 checks verdes.
+- Sección "Autenticación" en `SECURITY.md` documentando el modelo.
+
+### Changed
+- `app.py`: la UI ahora vive dentro de `gr.Tabs` (antes estaba directamente en `gr.Blocks`).
+- `scripts/test_seed_demo.py`: stub de Gradio extendido con `.change()`/`.click()`/`.submit()` no-ops (para poder importar `app_init_web.py` sin gradio real).
+- `README.md`: estado del proyecto + roadmap actualizado.
+
+### Fixed
+- Bug **F1** de `explore.md`: `guardar_restaurante()`/`guardar_catalogo()` sobrescribían siempre. Ahora `guardar_con_backup()` crea backup automático del archivo previo antes de sobrescribir.
+
+### Seguridad
+- Las credenciales de la pestaña "Configurar" se leen de HF Secrets (`CONFIG_USER`, `CONFIG_PASSWORD`). NO se commitean al repo.
+- El perfil demo es público por diseño (no contiene datos reales).
+
+### Push
+- `origin/main`: PR 1 (`be42ff7`) + PR 2 (`6eb3fdb`) + PR 3 (este).
+- `hf/main`: PR 1 (`4e31b02`) + PR 2 (`781456d`) — cherry-pick para evitar los `docs/assets/*.png` que HF rechaza.
+- Tag `v1.5.0` por crear.
+
+### Notas
+- Patrón "externalización de opciones en JSON + fallback hardcoded" se mantiene para las 15 dims de `PREGUNTAS_RESTAURANTE`.
+- Patrón "data-driven UI desde el schema" funciona sin tocar `app_init_web.py` cuando se agregan dims nuevas (basta con `PREGUNTAS_RESTAURANTE` + `init_options.json`).
+- HF OAuth nativo (Q1 del proposal) **no se implementó** en esta versión: fallback a auth básica con Secrets. OAuth queda como upgrade futuro cuando HF lo soporte out-of-the-box en Spaces free.
+
+---
+
 ## [Unreleased]
 
 ### Planeado
-- **v1.5.0** — Pestaña "Configurar mi restaurante" en el navegador (change `init-web`, ex-Fase 2 del producto vendible). UI web data-driven que reutiliza el núcleo de `agents/init_phase.py` para que un hostelero no técnico pueda configurar restaurante + carta sin terminal.
+- **v1.6.0** — Capturas de pantalla reales de la demo (mejora pendiente del verify-report 2026-08-05) + neutralizar voseo residual en `skill_selector` del Space.
 - **v2.0.0** — Segundo agente del ecosistema (Producción o Marketing, a decidir por tracción).
-- Capturas de pantalla reales de la demo (mejora pendiente del verify-report 2026-08-05).
 - Búsqueda full-text en el Archivo de Ideas (FTS5 de SQLite).
 - Categorización automática de ideas (LLM).
+- HF OAuth nativo (reemplaza auth básica cuando esté soportado en Spaces free).
 
 ---
 
@@ -177,7 +218,8 @@ Todos los cambios notables de **RestaurantEAI** (alias local: `restauranteia`) s
 - `📦 Deploy` — deploys, infra, releases.
 - `📝 Docs` — solo documentación.
 
-[Unreleased]: https://github.com/davidlopezg/restauranteai/compare/v1.4.0...HEAD
+[Unreleased]: https://github.com/davidlopezg/restauranteai/compare/v1.5.0...HEAD
+[1.5.0]: https://github.com/davidlopezg/restauranteai/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/davidlopezg/restauranteai/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/davidlopezg/restauranteai/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/davidlopezg/restauranteai/compare/v1.1.0...v1.2.0

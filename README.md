@@ -105,7 +105,7 @@ El Chef Creativo ofrece **4 modos**, todos con conocimiento automático de tu re
 | **Fase 4: Archivo de Ideas (módulo de memoria)** | ✅ | SQLite local + 11 comandos transversales + consent explícito |
 | Patrón template → live instance | ✅ | Repo público + repo privado sincronizable |
 | Producto vendible (Fase 1) | ✅ | Perfil demo + landing trilingüe + app polish + CI |
-| `init-web` (configurar restaurante en navegador) | 🚧 | En curso ([SDD abierto](openspec/changes/init-web/)) |
+| `init-web` (configurar restaurante en navegador) | ✅ | Pestaña "⚙️ Configurar mi restaurante" en el HF Space (v1.5.0) |
 | Memoria enriquecida (FTS5, categorías auto) | ⏳ | Backlog |
 | Capturas reales de la 4ª skill (`chat`) | ⏳ | Mejora pendiente |
 | Resto de agentes (Producción, Marketing) | ⏳ | Backlog — cada uno es un proyecto aparte |
@@ -795,6 +795,7 @@ Por favor, leé también nuestro **[Código de Conducta](CODE_OF_CONDUCT.md)** (
 > Roadmap vivo. Lo que está planeado y el orden aproximado. Cambia según tracción y feedback.
 
 ### ✅ Ya shipped (v1.x)
+- **v1.5.0** (2026-08-29) — init-web: pestaña "⚙️ Configurar mi restaurante" en el HF Space (self-service del hostelero en navegador, con auth básica).
 - **v1.4.0** (2026-08-05) — Producto vendible: perfil demo, landing trilingüe, app polish, [landing live](https://davidlopezg.github.io/restauranteai/).
 - **v1.3.0** (2026-07-02) — Módulo de Memoria (Archivo de Ideas) + skill `chat` + script de sync template↔live.
 - **v1.2.0** (2026-07-02) — Sistema de skills extensible + proceso creativo de 7 fases + ideas creativas con métodos de ElBulli.
@@ -802,7 +803,7 @@ Por favor, leé también nuestro **[Código de Conducta](CODE_OF_CONDUCT.md)** (
 - **v1.0.0** (2026-06-30) — Agente CLI local + integración MiniMax API.
 
 ### 🚧 En curso
-- **`init-web`** (change SDD abierto) — Pestaña "Configurar mi restaurante" en el navegador para que un hostelero no técnico pueda configurar su perfil y carta sin terminal. El núcleo (`init_phase.py`) ya es data-driven; falta la UI web.
+- (vacio — la siguiente pieza priorizada aún está en discovery)
 
 ### 🔮 Próximo
 - **Búsqueda full-text (FTS5) en el Archivo de Ideas** — para encontrar ideas guardadas por palabras clave con ranking.

@@ -110,6 +110,54 @@ Si esto matchea, **abortá el commit** (`git restore --staged <archivo>`) y revi
 
 ---
 
+## 🔐 Autenticación de la pestaña "Configurar mi restaurante" (HF Space)
+
+Desde la versión **v1.5.0**, el Space `RestaurantEAI` expone una segunda pestaña,
+"Configurar mi restaurante", que permite editar el perfil del restaurante y la
+carta desde el navegador (Fase 2 init-web).
+
+### Modelo de autenticación
+
+- **Pestaña "Chat"**: **pública** (sin autenticación). Cualquier visitante puede
+  usar el chef creativo.
+- **Pestaña "Configurar mi restaurante"**: **protegida** con auth básica de
+  Gradio (`auth=(user, password)`). Las credenciales se leen de variables de
+  entorno (`CONFIG_USER`, `CONFIG_PASSWORD`) configuradas como **Secrets** en el
+  HF Space. Si no están configuradas, no se exige auth (modo dev local).
+
+### Alcance y limitaciones
+
+- La autenticación **NO protege secretos de infraestructura**. Los secretos
+  (API key, etc.) viven en HF Secrets, que tienen su propio modelo de seguridad
+  independiente de la UI.
+- La autenticación existe para **evitar edición no deseada por terceros** del
+  perfil demo público, no para confidencialidad.
+- En un modelo "open core", el uso real想定 = instancia privada del cliente
+  (servicio pago), que tiene su propio modelo de auth y persistencia.
+
+### Cómo configurar las credenciales (operador del Space)
+
+1. HF Space → **Settings → Repository secrets**.
+2. Agregar `CONFIG_USER` (string, ej: `davidlopezgamero`).
+3. Agregar `CONFIG_PASSWORD` (string robusto, ej: generado con `openssl rand -hex 16`).
+4. Reiniciar el Space (Settings → Restart).
+
+Tras reinicio, la pestaña "Configurar" exigirá usuario + contraseña; el tab
+"Chat" sigue abierto.
+
+### Riesgos residuales
+
+| # | Riesgo | Mitigación |
+|---|---|---|
+| S1 | Password filtrada en chat / screenshot | Rotar `CONFIG_PASSWORD` desde HF Secrets (es trivial) |
+| S2 | Atacante edita el perfil demo | El perfil es público por diseño; no contiene datos reales |
+| S3 | HF Secrets no soportados en plan free | HF Secrets están en todos los planes de Spaces |
+
+### Referencias
+
+- [Gradio docs: `auth`](https://gradio.app/guides/sharing-your-app#authentication)
+- [HF Spaces: Secrets](https://huggingface.co/docs/hub/spaces-overview#managing-secrets)
+
 ## 📚 Referencias útiles
 
 - [GitHub Security Advisories](https://docs.github.com/en/code-security/security-advisories) — para crear avisos de seguridad formales.
