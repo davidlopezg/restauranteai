@@ -22,6 +22,7 @@ Decisiones de seguridad:
 
 from __future__ import annotations
 
+import os
 import sys
 import logging
 from pathlib import Path
@@ -53,6 +54,7 @@ from agents.creativo.skills import (
     skill_names_for_ui,
     load_skill_prompt as load_skill_prompt_from_registry,
 )
+from app_init_web import _render_init_web_tab
 
 # Logger seguro (no expone la key ni stack traces completos)
 logging.basicConfig(
@@ -414,30 +416,37 @@ with gr.Blocks() as demo:
     # restaurante.json cuando el Blocks se construye a nivel de módulo.
     perfil_md = gr.Markdown(_estado_perfil())
     gr.Markdown("  ·  [🌐 Volver a la web](https://davidlopezg.github.io/restauranteai/)")
-    skill_selector = gr.Radio(
-        choices=SKILL_CHOICES,
-        value="ficha",
-        label="¿Qué necesitás del chef?",
-        info=(
-            "Ficha técnica: respuesta estructurada directa. "
-            "Proceso creativo: muestra paso a paso cómo piensa el chef, después la ficha."
-        ),
-    )
-    gr.ChatInterface(
-        fn=responder,
-        title="🍂 Chef Creativo — RestaurantEAI",
-        cache_examples=False,
-        description=(
-            "Generador de fichas culinarias con IA. Elige un modo y prueba con la demo "
-            "(restaurante mediterráneo de ejemplo) o pide algo a tu medida. "
-            "Modos: Ficha técnica · Proceso creativo · Ideas creativas · Chat con el chef."
-        ),
-        examples=[[e] for e in EJEMPLOS_FICHA],  # lista de listas: [ejemplo_texto] cuando hay additional_inputs
-        additional_inputs=[skill_selector],
-        chatbot=gr.Chatbot(
-            avatar_images=(None, "🍂"),
-        ),
-    )
+
+    # Pestañas: Chat (público) + Configurar mi restaurante (Fase 2 init-web)
+    with gr.Tabs():
+        with gr.Tab("💬 Chat"):
+            skill_selector = gr.Radio(
+                choices=SKILL_CHOICES,
+                value="ficha",
+                label="¿Qué necesitás del chef?",
+                info=(
+                    "Ficha técnica: respuesta estructurada directa. "
+                    "Proceso creativo: muestra paso a paso cómo piensa el chef, después la ficha."
+                ),
+            )
+            gr.ChatInterface(
+                fn=responder,
+                title="🍂 Chef Creativo — RestaurantEAI",
+                cache_examples=False,
+                description=(
+                    "Generador de fichas culinarias con IA. Elige un modo y prueba con la demo "
+                    "(restaurante mediterráneo de ejemplo) o pide algo a tu medida. "
+                    "Modos: Ficha técnica · Proceso creativo · Ideas creativas · Chat con el chef."
+                ),
+                examples=[[e] for e in EJEMPLOS_FICHA],
+                additional_inputs=[skill_selector],
+                chatbot=gr.Chatbot(
+                    avatar_images=(None, "🍂"),
+                ),
+            )
+
+        with gr.Tab("⚙️ Configurar mi restaurante"):
+            _render_init_web_tab()
 
 
 # ---------------------------------------------------------------------------
@@ -473,10 +482,19 @@ if __name__ == "__main__":
     # design): sin esto, un boot frío del Space mostraría "(sin contexto)".
     perfil_md.value = _estado_perfil()
 
+    # Auth: HF OAuth nativo en Spaces (via frontmatter) o auth básica
+    # con user/password desde env vars. Si no hay env vars, no se exige auth
+    # (modo dev local). En producción HF, configurar CONFIG_USER +
+    # CONFIG_PASSWORD como Secrets.
+    auth_config = None
+    if os.getenv("CONFIG_USER") and os.getenv("CONFIG_PASSWORD"):
+        auth_config = (os.getenv("CONFIG_USER"), os.getenv("CONFIG_PASSWORD"))
+
     demo.launch(
         server_name="0.0.0.0",
         server_port=7860,
         show_error=True,
         theme=gr.themes.Soft(primary_hue="orange"),
         css=CUSTOM_CSS,
+        auth=auth_config,
     )
