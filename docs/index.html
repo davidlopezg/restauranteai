@@ -216,36 +216,64 @@
             text-align: center;
         }
 
-        .ficha-sample {
+        .demo-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 18px;
+            margin: 6px auto 8px;
+            max-width: 720px;
+        }
+        .demo-figure {
+            margin: 0;
             border: 1px solid var(--border);
             border-radius: var(--radius);
             overflow: hidden;
-            max-width: 640px;
-            margin: 0 auto 22px;
+            background: var(--surface);
+            transition: transform .15s ease, box-shadow .15s ease;
         }
-
-        .ficha-sample .sample-head {
-            background: var(--text);
-            color: #fff;
-            padding: 14px 18px;
+        .demo-figure:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(26,23,20,.08);
+        }
+        .demo-figure a { display: block; line-height: 0; }
+        .demo-figure img {
+            display: block;
+            width: 100%;
+            height: auto;
+            border-bottom: 1px solid var(--border);
+        }
+        .demo-figure figcaption {
             display: flex;
             align-items: center;
             justify-content: space-between;
+            padding: 10px 14px;
+            font-size: 0.85rem;
+        }
+        .demo-mode {
+            font-weight: 700;
+            color: var(--text);
+        }
+        .demo-tag {
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            background: var(--accent-light);
+            color: var(--accent);
+            padding: 3px 9px;
+            border-radius: 999px;
         }
 
-        .ficha-sample .sample-head .tag { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.8; }
+        @media (min-width: 720px) {
+            .demo-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+            .demo-figure:first-child {
+                grid-column: 1 / -1;
+            }
+        }
 
-        .ficha-sample .sample-body { padding: 18px; }
-        .ficha-sample .sample-body .dish-name { font-size: 1.15rem; font-weight: 800; margin-bottom: 6px; }
-        .ficha-sample .sample-body .dish-story { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 14px; }
-
-        .sample-rows { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
-
-        .sample-row { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; }
-        .sample-row .row-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent); margin-bottom: 3px; }
-        .sample-row .row-value { font-size: 0.88rem; color: var(--text); }
-
-        .demo-cta { text-align: center; margin-top: 8px; }
+        .demo-cta { text-align: center; margin-top: 18px; }
 
         /* ── Offer ──────────────────────────────────────────────────────── */
 
@@ -442,30 +470,37 @@
                 ⚡ <span data-i18n="demo_note">La primera visita puede tardar unos segundos en arrancar (demo gratuita).</span>
             </div>
 
-            <!-- Ejemplo visual de ficha generada (fallback HTML puro) -->
-            <div class="ficha-sample">
-                <div class="sample-head">
-                    <span data-i18n="sample_tag">Ejemplo de ficha generada</span>
-                    <span class="tag" data-i18n="sample_demo">Demo</span>
-                </div>
-                <div class="sample-body">
-                    <div class="dish-name" data-i18n="sample_name">Calabaza de otoño</div>
-                    <div class="dish-story" data-i18n="sample_story">Evoca los colores del otoño en la Garrotxa: calabaza asada, queso de cabra y miel de romero.</div>
-                    <div class="sample-rows">
-                        <div class="sample-row">
-                            <div class="row-label" data-i18n="sample_ing_label">Ingredientes (4 raciones)</div>
-                            <div class="row-value" data-i18n="sample_ing">Calabaza 500 g · Queso de cabra 200 g · Miel · Romero</div>
-                        </div>
-                        <div class="sample-row">
-                            <div class="row-label" data-i18n="sample_pair_label">Maridaje</div>
-                            <div class="row-value" data-i18n="sample_pair">Blanco joven del Penedès</div>
-                        </div>
-                        <div class="sample-row">
-                            <div class="row-label" data-i18n="sample_tech_label">Elaboración</div>
-                            <div class="row-value" data-i18n="sample_tech">Asar 40 min a 180 °C, gratinar con queso y miel.</div>
-                        </div>
-                    </div>
-                </div>
+            <!-- Capturas reales de los 3 modos visuales de la demo -->
+            <div class="demo-grid">
+                <figure class="demo-figure">
+                    <a href="https://huggingface.co/spaces/davidlopezgamero/RestaurantEAI" target="_blank" rel="noopener">
+                        <img src="assets/demo-ficha.png" alt="Demo — Ficha técnica: risotto de setas con trufa generado por el Chef Creativo." loading="lazy">
+                    </a>
+                    <figcaption>
+                        <span class="demo-mode">🍂 Ficha técnica</span>
+                        <span class="demo-tag">Demo</span>
+                    </figcaption>
+                </figure>
+
+                <figure class="demo-figure">
+                    <a href="https://huggingface.co/spaces/davidlopezgamero/RestaurantEAI" target="_blank" rel="noopener">
+                        <img src="assets/demo-proceso-creativo.png" alt="Demo — Proceso creativo: state machine de 7 fases con 3 completas y la cuarta en curso." loading="lazy">
+                    </a>
+                    <figcaption>
+                        <span class="demo-mode">🧠 Proceso creativo</span>
+                        <span class="demo-tag">Demo</span>
+                    </figcaption>
+                </figure>
+
+                <figure class="demo-figure">
+                    <a href="https://huggingface.co/spaces/davidlopezgamero/RestaurantEAI" target="_blank" rel="noopener">
+                        <img src="assets/demo-ideas.png" alt="Demo — Ideas creativas: 5 de 10 ideas para otoño con métodos de ElBulli." loading="lazy">
+                    </a>
+                    <figcaption>
+                        <span class="demo-mode">💡 Ideas creativas</span>
+                        <span class="demo-tag">Demo</span>
+                    </figcaption>
+                </figure>
             </div>
 
             <div class="demo-cta">
@@ -596,16 +631,6 @@ const LANG = {
         demo_h2: "Pruébalo en 10 segundos",
         demo_lead: "Sin registro, sin instalación, sin terminal. La demo usa un perfil genérico de restaurante mediterráneo, marcado como demo.",
         demo_note: "La primera visita puede tardar unos segundos en arrancar (demo gratuita).",
-        sample_tag: "Ejemplo de ficha generada",
-        sample_demo: "Demo",
-        sample_name: "Calabaza de otoño",
-        sample_story: "Evoca los colores del otoño en la Garrotxa: calabaza asada, queso de cabra y miel de romero.",
-        sample_ing_label: "Ingredientes (4 raciones)",
-        sample_ing: "Calabaza 500 g · Queso de cabra 200 g · Miel · Romero",
-        sample_pair_label: "Maridaje",
-        sample_pair: "Blanco joven del Penedès",
-        sample_tech_label: "Elaboración",
-        sample_tech: "Asar 40 min a 180 °C, gratinar con queso y miel.",
         cta_demo2: "Abrir el chat de la demo →",
         oferta_h2: "¿Quieres esto en tu restaurante?",
         oferta_t: "El software es libre. La implementación, a tu medida.",
@@ -664,16 +689,6 @@ const LANG = {
         demo_h2: "Prova-ho en 10 segons",
         demo_lead: "Sense registre, sense instal·lació, sense terminal. La demo utilitza un perfil genèric de restaurant mediterrani, marcat com a demo.",
         demo_note: "La primera visita pot tardar uns segons a arrencar (demo gratuïta).",
-        sample_tag: "Exemple de fitxa generada",
-        sample_demo: "Demo",
-        sample_name: "Carbassa de tardor",
-        sample_story: "Evoca els colors de la tardor a la Garrotxa: carbassa rostida, formatge de cabra i mel de romaní.",
-        sample_ing_label: "Ingredients (4 racions)",
-        sample_ing: "Carbassa 500 g · Formatge de cabra 200 g · Mel · Romaní",
-        sample_pair_label: "Maridatge",
-        sample_pair: "Blanc jove del Penedès",
-        sample_tech_label: "Elaboració",
-        sample_tech: "Rostir 40 min a 180 °C, gratinar amb formatge i mel.",
         cta_demo2: "Obre el xat de la demo →",
         oferta_h2: "Vols això al teu restaurant?",
         oferta_t: "El programari és lliure. La implementació, a mida.",
@@ -732,16 +747,6 @@ const LANG = {
         demo_h2: "Try it in 10 seconds",
         demo_lead: "No sign-up, no install, no terminal. The demo uses a generic Mediterranean restaurant profile, clearly marked as a demo.",
         demo_note: "The first visit may take a few seconds to start (free demo).",
-        sample_tag: "Sample generated card",
-        sample_demo: "Demo",
-        sample_name: "Autumn pumpkin",
-        sample_story: "Evokes the autumn colours of La Garrotxa: roasted pumpkin, goat cheese and rosemary honey.",
-        sample_ing_label: "Ingredients (serves 4)",
-        sample_ing: "Pumpkin 500 g · Goat cheese 200 g · Honey · Rosemary",
-        sample_pair_label: "Pairing",
-        sample_pair: "Young white from Penedès",
-        sample_tech_label: "Method",
-        sample_tech: "Roast 40 min at 180 °C, gratin with cheese and honey.",
         cta_demo2: "Open the demo chat →",
         oferta_h2: "Want this in your restaurant?",
         oferta_t: "The software is free. The implementation, tailored to you.",
