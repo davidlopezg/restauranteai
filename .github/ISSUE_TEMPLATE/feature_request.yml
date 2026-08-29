@@ -1,0 +1,93 @@
+name: 💡 Solicitud de feature
+description: Proponer una funcionalidad nueva o mejora a una existente.
+title: "[feature] "
+labels: ["enhancement", "needs-triage"]
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Antes de proponer, leé:
+        - [README.md](https://github.com/davidlopezg/restauranteai/blob/main/README.md) — visión general.
+        - [Roadmap público](#) — features ya planeadas.
+        - [CONTRIBUTING.md](https://github.com/davidlopezg/restauranteai/blob/main/CONTRIBUTING.md) — reglas duras.
+
+  - type: textarea
+    id: problema
+    attributes:
+      label: Problema o motivación
+      description: ¿Qué problema resuelve esto? ¿Quién lo sufre y cómo?
+      placeholder: |
+        Como hostelero que renueva la carta cada 3 meses, me gustaría poder [HACER X] sin tener que [ESFUERZO Y] cada vez. Hoy el sistema no lo soporta.
+    validations:
+      required: true
+
+  - type: textarea
+    id: solucion
+    attributes:
+      label: Solución propuesta
+      description: Descripción concreta de qué te gustaría que el sistema hiciera.
+      placeholder: |
+        Que cuando termine el proceso creativo, el chef me proponga automáticamente:
+        - 3 fichas técnicas derivadas
+        - 5 ideas para hueco de carta
+        - 1 sugerencia de maridaje para cada plato
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternativas
+    attributes:
+      label: Alternativas consideradas
+      description: ¿Hay otras formas de resolver el problema? ¿Por qué preferís tu propuesta?
+    validations:
+      required: false
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Área afectada
+      description: Qué parte del proyecto tocaría.
+      options:
+        - Chef Creativo (skill nueva o modificación)
+        - Archivo de Ideas (módulo `agents/memoria/`)
+        - UI Gradio (`app.py`)
+        - Landing (`docs/index.html`)
+        - Init (CLI o futura UI web)
+        - Tests / CI
+        - Documentación
+        - Otro (explicá en contexto)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: prioridad
+    attributes:
+      label: Prioridad (subjetiva)
+      description: Tu sensación de urgencia. La prioridad final la decide el maintainer.
+      options:
+        - Alta (bloquea mi uso del producto)
+        - Media (mejoraría significativamente mi uso)
+        - Baja (nice-to-have)
+    validations:
+      required: true
+
+  - type: textarea
+    id: contexto
+    attributes:
+      label: Contexto adicional
+      description: Capturas, mockups, ejemplos de uso, links a competidores que lo hagan bien, etc.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks previos
+      options:
+        - label: Busqué en issues existentes y no encontré algo equivalente.
+          required: true
+        - label: Leí el roadmap público y entiendo qué features ya están planeadas.
+          required: true
+        - label: Estoy dispuesto a [abrir un PR](https://github.com/davidlopezg/restauranteai/blob/main/CONTRIBUTING.md) si la propuesta es aceptada.
+          required: false

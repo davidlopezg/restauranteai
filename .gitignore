@@ -30,6 +30,7 @@ output/
 # Local Pi runtime state
 .atl/
 .pi/
+.pi-subagents/
 
 # Estado del script restauranteai-sync (última versión sincronizada del template)
 .template-version

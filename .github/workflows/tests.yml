@@ -1,0 +1,49 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Permite que un PR de fork corra tests (solo lectura, sin secrets)
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Tests (Python 3.11)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout código
+        uses: actions/checkout@v4
+
+      - name: 🐍 Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - name: 📦 Instalar dependencias
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: 🧪 Tests de regresión de la app (app.py / Gradio 6)
+        run: python scripts/test_app.py
+
+      - name: 🧪 Tests del seed demo (perfil genérico precargado)
+        run: python scripts/test_seed_demo.py
+
+      - name: 🧪 Tests pytest (memoria + regresión skills + chat)
+        run: python -m pytest tests/ -v --tb=short
+
+      - name: ✅ Resumen
+        if: success()
+        run: |
+          echo "✅ Todas las suites pasaron."
+          echo "  - scripts/test_app.py        → 6/6 checks"
+          echo "  - scripts/test_seed_demo.py  → 5/5 checks"
+          echo "  - pytest tests/              → 132+ tests"

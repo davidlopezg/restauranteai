@@ -1,0 +1,119 @@
+name: 🐛 Reporte de bug
+description: Reportar un comportamiento incorrecto o inesperado del proyecto.
+title: "[bug] "
+labels: ["bug", "needs-triage"]
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ¡Gracias por reportar un bug! Por favor, completá la mayor cantidad de información posible.
+        Cuanto más detallado, más rápido lo podemos resolver.
+
+  - type: textarea
+    id: descripcion
+    attributes:
+      label: Descripción del bug
+      description: Una descripción clara y concisa de qué salió mal.
+      placeholder: |
+        Cuando intento generar una ficha técnica de [plato X], el chef devuelve [comportamiento Y] en vez de [comportamiento esperado Z].
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduccion
+    attributes:
+      label: Pasos para reproducir
+      description: Pasos concretos que llevan al bug. Si es posible, en formato numerado.
+      placeholder: |
+        1. Clonar el repo en `main`
+        2. Correr `python -m agents.init_phase` (con perfil demo)
+        3. Correr `python -m agents.creativo.agent "Risotto de setas"`
+        4. Ver que el chef responde en inglés (debería responder en castellano)
+    validations:
+      required: true
+
+  - type: textarea
+    id: esperado
+    attributes:
+      label: Comportamiento esperado
+      description: Qué esperabas que pasara.
+      placeholder: |
+        Que el chef respondiera en castellano (el comando se lo refuerza al final del mensaje).
+    validations:
+      required: true
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots / logs
+      description: Si aplica, pegá capturas de pantalla, output de terminal, o stack traces. **No incluyas tu API key.**
+    validations:
+      required: false
+
+  - type: dropdown
+    id: entorno
+    attributes:
+      label: Entorno
+      description: Dónde lo estás corriendo.
+      options:
+        - HF Space (público)
+        - Local (CLI: `python -m agents.creativo.agent`)
+        - Local (UI: `python app.py`)
+        - Otro (especificá en comentarios)
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Versión del proyecto
+      description: Tag de versión (ej: v1.4.0) o commit hash. Si no sabés, dejá "main" o "última".
+      placeholder: "v1.4.0"
+    validations:
+      required: true
+
+  - type: input
+    id: python
+    attributes:
+      label: Versión de Python
+      description: Resultado de `python --version`.
+      placeholder: "Python 3.11.4"
+    validations:
+      required: true
+
+  - type: input
+    id: dependencias
+    attributes:
+      label: Versiones de dependencias clave (opcional)
+      description: Si las conocés, pegá el resultado de `pip show gradio huggingface_hub httpx python-dotenv` (solo las versiones, sin paths).
+      placeholder: |
+        gradio 6.19.0
+        huggingface_hub 1.2.x
+        httpx 0.27.x
+        python-dotenv 1.0.x
+    validations:
+      required: false
+
+  - type: textarea
+    id: contexto
+    attributes:
+      label: Contexto adicional
+      description: Cualquier otra cosa relevante (restaurante configurado, skill usada, contenido de `restaurante.json` sin datos sensibles, etc.).
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks previos
+      description: Confirmá que hiciste estas verificaciones antes de abrir el issue.
+      options:
+        - label: Busqué en issues existentes y no encontré un duplicado.
+          required: true
+        - label: Estoy corriendo la última versión del proyecto (`main` o último tag).
+          required: true
+        - label: Mi `.env` NO contiene datos reales (la key tiene el placeholder del `.env.example`).
+          required: true
+        - label: No estoy incluyendo datos de un restaurante real (solo perfil `demo: true` o restaurante ficticio).
+          required: true

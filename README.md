@@ -14,6 +14,18 @@ short_description: "Chef IA: fichas y proceso creativo"
 
 # 🍂 Chef Creativo — RestaurantEAI
 
+<div align="center">
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
+[![Version](https://img.shields.io/badge/version-v1.4.0-orange)](./CHANGELOG.md)
+[![Tests](https://img.shields.io/github/actions/workflow/status/davidlopezg/restauranteai/tests.yml?label=tests)](./.github/workflows/tests.yml)
+[![Python 3.11](https://img.shields.io/badge/python-3.11-blue)](https://www.python.org/downloads/)
+[![HF Space](https://img.shields.io/badge/%F0%9F%A4%97-Hugging%20Face%20Space-yellow)](https://huggingface.co/spaces/davidlopezgamero/RestaurantEAI)
+[![Landing](https://img.shields.io/badge/landing-live-green)](https://davidlopezg.github.io/restauranteai/)
+[![Open Source](https://img.shields.io/badge/open-source-brightgreen)](#)
+
+</div>
+
 > Estado: **MVP-3** — Chef Creativo con 4 skills (ficha + proceso creativo + ideas creativas + chat), conocimiento del restaurante y carta inyectados automáticamente. Deployado en Hugging Face Spaces. End-to-end con la API oficial de MiniMax.
 
 **¿Qué es?** Ecosistema de agentes IA para restauración. El **Chef Creativo** ofrece tres modos, todos con conocimiento automático de tu restaurante (ticket, línea culinaria, carta) y catálogo de platos:

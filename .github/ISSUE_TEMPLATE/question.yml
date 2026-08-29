@@ -1,0 +1,47 @@
+name: ❓ Pregunta
+description: Pregunta sobre cómo usar, configurar o extender el proyecto.
+title: "[question] "
+labels: ["question"]
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Antes de abrir este issue, te recomendamos:
+        - Leer el [README.md](https://github.com/davidlopezg/restauranteai/blob/main/README.md) (sobre todo las secciones "Quick start" y "Sistema de skills").
+        - Mirar [docs/COMMANDS.md](https://github.com/davidlopezg/restauranteai/blob/main/docs/COMMANDS.md) (índice de comandos y scripts).
+        - Buscar en issues/discussions existentes (puede que ya esté respondida).
+
+        Si después de esto tu pregunta sigue abierta, completá el formulario. 🙏
+
+  - type: dropdown
+    id: tipo
+    attributes:
+      label: Tipo de pregunta
+      description: Cómo categorizarías tu pregunta.
+      options:
+        - Cómo usar (ej: "¿cómo agrego una skill nueva?")
+        - Configuración (ej: "¿cómo configuro el modelo de LLM?")
+        - Despliegue (ej: "¿cómo deployo a HF Spaces?")
+        - Contribución (ej: "¿puedo agregar X al init?")
+        - Otro
+    validations:
+      required: true
+
+  - type: textarea
+    id: pregunta
+    attributes:
+      label: Tu pregunta
+      description: Pregunta concreta y específica.
+      placeholder: |
+        ¿Es posible usar el proyecto con un proveedor de LLM distinto a MiniMax? Si sí, ¿qué tendría que cambiar?
+    validations:
+      required: true
+
+  - type: textarea
+    id: contexto
+    attributes:
+      label: Contexto
+      description: Qué intentaste, qué leíste, qué te falta. Cuanto más contexto, mejor respuesta.
+    validations:
+      required: false
