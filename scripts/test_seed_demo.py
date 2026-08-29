@@ -76,6 +76,11 @@ def _instalar_stub_gradio() -> None:
         def __exit__(self, *exc):
             return False
 
+        # No-ops para los handlers que app_init_web.py enchufa en module load
+        def change(self, *a, **kw): return self
+        def click(self, *a, **kw): return self
+        def submit(self, *a, **kw): return self
+
     class _GradioStub(types.ModuleType):
         def __getattr__(self, name):
             return _Componente
