@@ -297,7 +297,7 @@ def _save_with_guard(
             backup_path = BACKUPS_DIR / f"{DEMO_BACKUP_FILENAME_PREFIX}preserved.json"
             import shutil
             shutil.copy2(
-                Path(__file__).resolve().parent / ".agent_knowledge" / "restaurante.json",
+                Path(__file__).resolve().parent / "conocimiento" / "interno_restaurante" / "restaurante.json",
                 backup_path,
             )
             msgs.append(
@@ -319,7 +319,7 @@ def _save_with_guard(
             backup_path = BACKUPS_DIR / f"catalogo_platos_preserved.json"
             import shutil
             shutil.copy2(
-                Path(__file__).resolve().parent / ".agent_knowledge" / "catalogo_platos.json",
+                Path(__file__).resolve().parent / "conocimiento" / "interno_restaurante" / "catalogo_platos.json",
                 backup_path,
             )
             msgs.append(f"⚠️ Catálogo real preservado (backup: {backup_path.name}).")
@@ -408,13 +408,13 @@ def _handle_restaurar_demo() -> tuple[str, str, str]:
     if not actual.get("demo", False):
         return (
             "❌ Solo se puede restaurar el demo sobre un perfil demo. "
-            "Si querés volver al demo, primero borrá `.agent_knowledge/restaurante.json` "
+            "Si querés volver al demo, primero borrá `conocimiento/interno_restaurante/restaurante.json` "
             "desde CLI.",
             "",
             "",
         )
 
-    demo_dir = Path(__file__).resolve().parent / "agents" / "creativo" / "knowledge"
+    demo_dir = Path(__file__).resolve().parent / "conocimiento" / "interno_app" / "recursos"
     demo_rest = json.loads((demo_dir / "demo_restaurante.json").read_text(encoding="utf-8"))
     demo_cat = json.loads((demo_dir / "demo_catalogo_platos.json").read_text(encoding="utf-8"))
 

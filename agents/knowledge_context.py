@@ -1,14 +1,17 @@
 """
 knowledge_context.py — archivos compartidos entre TODOS los agentes del proyecto.
 
-Estos archivos viven en `.agent_knowledge/` (en la raíz del repo) y se generan
+Estos archivos viven en `conocimiento/interno_restaurante/` y se generan
 una sola vez en la fase init. Cualquier agente nuevo los lee al iniciar.
 
-Diferencia vs `agents/creativo/knowledge/`:
-- `agents/creativo/knowledge/` = conocimiento ESTÁTICO del agente creativo
-  (estacionalidad, combinaciones clásicas). Recursos del chef, no se generan.
-- `.agent_knowledge/` (gestionado por este módulo) = conocimiento DINÁMICO del
-  restaurante, generado en init, compartido entre todos los agentes.
+Estructura del conocimiento (ver `conocimiento/README.md`):
+- `conocimiento/interno_restaurante/` = conocimiento DINÁMICO del
+  restaurante, generado en init, compartido entre todos los agentes
+  (perfil, carta, ideas guardadas, sesiones de proceso creativo).
+- `conocimiento/interno_app/` = recursos del agente (prompts, APIs,
+  conocimiento estático tipo estacionalidad o combinaciones).
+- `conocimiento/fuentes_externas/` = documentación externa consultable
+  (métodos creativos, manuales, papers).
 """
 
 from __future__ import annotations
@@ -18,9 +21,9 @@ import shutil
 from datetime import datetime
 from pathlib import Path
 
-# Ubicación física: <raíz del proyecto>/.agent_knowledge/
+# Ubicación física: <raíz del proyecto>/conocimiento/interno_restaurante/
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-KNOWLEDGE_DIR = PROJECT_ROOT / ".agent_knowledge"
+KNOWLEDGE_DIR = PROJECT_ROOT / "conocimiento" / "interno_restaurante"
 
 RESTAURANTE_PATH = KNOWLEDGE_DIR / "restaurante.json"
 RESTAURANTE_DOC_PATH = KNOWLEDGE_DIR / "restaurante.md"
@@ -30,7 +33,7 @@ BACKUPS_DIR = KNOWLEDGE_DIR / "backups"
 
 
 def ensure_dir() -> Path:
-    """Crea el directorio .agent_knowledge/ si no existe. Idempotente."""
+    """Crea el directorio conocimiento/interno_restaurante/ si no existe. Idempotente."""
     KNOWLEDGE_DIR.mkdir(parents=True, exist_ok=True)
     return KNOWLEDGE_DIR
 
@@ -103,7 +106,7 @@ def guardar_catalogo(platos: list[dict], schema_doc: str | None = None) -> Path:
 
 
 def listar_archivos_knowledge() -> list[Path]:
-    """Lista todos los archivos en .agent_knowledge/ (útil para debug)."""
+    """Lista todos los archivos en conocimiento/interno_restaurante/ (útil para debug)."""
     if not KNOWLEDGE_DIR.exists():
         return []
     return sorted(KNOWLEDGE_DIR.iterdir())
@@ -112,9 +115,9 @@ def listar_archivos_knowledge() -> list[Path]:
 def resumen_estado() -> str:
     """Devuelve un string con el estado actual del knowledge base."""
     if not KNOWLEDGE_DIR.exists():
-        return ".agent_knowledge/ no existe aún (no se corrió la fase init)."
+        return "conocimiento/interno_restaurante/ no existe aún (no se corrió la fase init)."
 
-    lineas = [".agent_knowledge/:"]
+    lineas = ["conocimiento/interno_restaurante/:"]
     for path in listar_archivos_knowledge():
         size = path.stat().st_size
         lineas.append(f"  - {path.name} ({size} bytes)")
@@ -198,7 +201,7 @@ def guardar_con_backup(
     Args:
         data: dict a guardar.
         schema_doc: texto del schema companion (.md). Si None, no se actualiza.
-        backup_dir: directorio donde crear el backup. Default: .agent_knowledge/backups/.
+        backup_dir: directorio donde crear el backup. Default: conocimiento/interno_restaurante/backups/.
 
     Returns:
         (success: bool, message: str)
@@ -269,7 +272,7 @@ def leer_con_backup_dir(backup_dir: Path | None = None) -> list[Path]:
     Lista todos los backups existentes, ordenados por mtime descendente.
 
     Args:
-        backup_dir: directorio de backups. Default: .agent_knowledge/backups/.
+        backup_dir: directorio de backups. Default: conocimiento/interno_restaurante/backups/.
 
     Returns:
         Lista de Path a archivos de backup. Vacía si el dir no existe.

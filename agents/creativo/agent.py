@@ -30,8 +30,9 @@ from dotenv import load_dotenv
 # --- Paths del proyecto ------------------------------------------------------
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-PROMPT_PATH = PROJECT_ROOT / "agents" / "creativo" / "prompts" / "system_chef.md"
-ESTACIONALIDAD_PATH = PROJECT_ROOT / "agents" / "creativo" / "knowledge" / "estacionalidad.json"
+# Recursos del agente viven en conocimiento/interno_app/ (migrado desde agents/creativo/...)
+PROMPT_PATH = PROJECT_ROOT / "conocimiento" / "interno_app" / "prompts" / "system_chef.md"
+ESTACIONALIDAD_PATH = PROJECT_ROOT / "conocimiento" / "interno_app" / "recursos" / "estacionalidad.json"
 
 load_dotenv(PROJECT_ROOT / ".env")
 

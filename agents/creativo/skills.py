@@ -21,7 +21,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
-PROMPTS_DIR = Path(__file__).parent / "prompts"
+# Prompts viven en conocimiento/interno_app/prompts/ (migrado desde agents/creativo/prompts/)
+# __file__ = .../agents/creativo/skills.py → subimos 2 niveles al PROJECT_ROOT
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+PROMPTS_DIR = PROJECT_ROOT / "conocimiento" / "interno_app" / "prompts"
 
 
 SKILLS: list[dict] = [
