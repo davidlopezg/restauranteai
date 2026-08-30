@@ -15,6 +15,12 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Inter:wght@400;500;600&display=swap">
 
+    <!-- GSAP + ScrollTrigger (Nivel 3: hero entrance, parallax, counter-ups, demo interactivo).
+         Cargados con defer para no bloquear el parse.
+         Si la CDN falla, la página degrada con IntersectionObserver nativo (graceful). -->
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/ScrollTrigger.min.js" defer></script>
+
     <style>
         /* ═══════════════════════════════════════════════════════════════════
            Chef Creativo — Landing Page (Refinamiento Nivel 1)
@@ -437,6 +443,69 @@
             background: var(--accent-soft);
             transform: translateX(2px);
         }
+        .demo-box .prompt-example:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 2px;
+        }
+        .demo-box .prompt-example.is-active {
+            border-style: solid;
+            border-color: var(--accent);
+            background: var(--accent-soft);
+            color: var(--text-strong);
+            transform: translateX(2px);
+        }
+        .demo-response {
+            margin-top: var(--space-5);
+            padding: var(--space-4) var(--space-5);
+            background: var(--accent-soft);
+            border: 1px solid var(--accent);
+            border-radius: var(--radius);
+            text-align: left;
+            font-size: var(--fs-sm);
+            color: var(--text);
+            line-height: 1.55;
+            min-height: 56px;
+        }
+        .demo-response strong { color: var(--accent-hover); }
+        .demo-response em { color: var(--text-muted); font-style: normal; opacity: 0.85; }
+        .demo-response:empty { display: none; }
+
+        /* ── Stats (counter-up con GSAP) ──────────────────────────────────────────── */
+        .stats {
+            padding: var(--space-8) 0;
+            background: var(--surface-alt);
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: var(--space-5);
+            text-align: center;
+        }
+        .stat {
+            padding: var(--space-3) var(--space-2);
+        }
+        .stat-number {
+            display: block;
+            font-family: var(--font-display);
+            font-variation-settings: 'opsz' 144;
+            font-size: clamp(2.5rem, 1.5rem + 4vw, 3.75rem);
+            font-weight: 700;
+            line-height: 1;
+            color: var(--accent-hover);
+            letter-spacing: -0.03em;
+            margin-bottom: var(--space-3);
+            font-variant-numeric: tabular-nums;
+        }
+        .stat-label {
+            display: block;
+            font-size: var(--fs-sm);
+            color: var(--text-muted);
+            line-height: 1.4;
+            max-width: 22ch;
+            margin: 0 auto;
+        }
 
         /* ── How it works ──────────────────────────────────────────── */
         .steps {
@@ -661,23 +730,26 @@
            inmediatamente (graceful degradation).
            ────────────────────────────────────────────────────────── */
         @media (prefers-reduced-motion: no-preference) {
-            html.js .reveal {
+            /* Solo se oculta cuando JS est\u00e1 activo Y GSAP no tom\u00f3 el control.
+               Si GSAP est\u00e1 disponible, se a\u00f1ade .gsap-ready y este selector
+               deja de aplicar para que GSAP.from() pueda animar sin conflicto. */
+            html.js:not(.gsap-ready) .reveal {
                 opacity: 0;
                 transform: translateY(16px);
                 transition:
                     opacity var(--dur-slow) var(--ease-out),
                     transform var(--dur-slow) var(--ease-out);
             }
-            html.js .reveal.is-visible {
+            html.js:not(.gsap-ready) .reveal.is-visible {
                 opacity: 1;
                 transform: translateY(0);
             }
-            html.js .reveal:nth-child(2) { transition-delay: 60ms; }
-            html.js .reveal:nth-child(3) { transition-delay: 120ms; }
-            html.js .reveal:nth-child(4) { transition-delay: 180ms; }
-            html.js .reveal:nth-child(5) { transition-delay: 240ms; }
-            html.js .reveal:nth-child(6) { transition-delay: 300ms; }
-            html.js .reveal:nth-child(7) { transition-delay: 360ms; }
+            html.js:not(.gsap-ready) .reveal:nth-child(2) { transition-delay: 60ms; }
+            html.js:not(.gsap-ready) .reveal:nth-child(3) { transition-delay: 120ms; }
+            html.js:not(.gsap-ready) .reveal:nth-child(4) { transition-delay: 180ms; }
+            html.js:not(.gsap-ready) .reveal:nth-child(5) { transition-delay: 240ms; }
+            html.js:not(.gsap-ready) .reveal:nth-child(6) { transition-delay: 300ms; }
+            html.js:not(.gsap-ready) .reveal:nth-child(7) { transition-delay: 360ms; }
         }
 
         /* ── Reduced motion: desactiva TODO el movimiento ───────────── */
@@ -797,8 +869,27 @@
 </section>
 
 <!-- ═══════════════════════════════════════════════════════════════════════════
-     FEATURES (qué hace el chef)
+     STATS (counter-up con GSAP)
      ═══════════════════════════════════════════════════════════════════════════ -->
+
+<section class="stats" aria-label="Cifras clave del sistema">
+    <div class="container">
+        <div class="stats-grid">
+            <div class="stat reveal">
+                <span class="stat-number" data-count="15">0</span>
+                <span class="stat-label">preguntas para conocerte la primera vez</span>
+            </div>
+            <div class="stat reveal">
+                <span class="stat-number" data-count="7">0</span>
+                <span class="stat-label">fases de razonamiento por ficha</span>
+            </div>
+            <div class="stat reveal">
+                <span class="stat-number" data-count="11">0</span>
+                <span class="stat-label">métodos creativos que el chef puede aplicar</span>
+            </div>
+        </div>
+    </div>
+</section>
 
 <section aria-labelledby="h-que-hace">
     <div class="container">
@@ -862,13 +953,15 @@
                 "Plato de verano con tomate y anchoas"
             </div>
             <p style="margin-top: 20px; color: var(--text-muted); font-size: 0.9rem;">
-                Copiá cualquiera de estos y pegalo en el chat del chef.
+                <strong>Click</strong> en uno para ver una respuesta t\u00edpica del chef.
+                Despu\u00e9s prob\u00e1 tu propia versi\u00f3n en el chat.
             </p>
             <a href="https://huggingface.co/spaces/davidlopezgamero/RestaurantEAI"
                class="btn btn-primary" target="_blank" rel="noopener"
                style="margin-top: 16px;">
                 Ir al chat →
             </a>
+            <div class="demo-response" id="demo-response" role="region" aria-live="polite"></div>
         </div>
     </div>
 </section>
@@ -1036,54 +1129,204 @@
 </footer>
 
 <script>
+/* =====================================================================
+   Chef Creativo — landing behavior (single-file, vanilla + GSAP opcional)
+   - Si GSAP y ScrollTrigger cargan desde CDN -> animaciones premium
+   - Si la CDN falla -> IntersectionObserver nativo (mismo resultado visual)
+   - Todo respeta prefers-reduced-motion
+   ===================================================================== */
 (function () {
-    // Marca JS como disponible para que los selectores `html.js .reveal ...`
-    // empiecen a ocultar elementos que luego se irán revelando.
-    // Sin JS, todo es visible de inmediato (graceful degradation).
+    'use strict';
+
+    // Flag global de JS para CSS hooks (.reveal, .js, etc.)
     document.documentElement.classList.add('js');
 
-    // Reveal-on-scroll: nativo, sin librerías.
-    if ('IntersectionObserver' in window) {
-        var io = new IntersectionObserver(function (entries) {
-            entries.forEach(function (entry) {
-                if (entry.isIntersecting) {
-                    entry.target.classList.add('is-visible');
-                    io.unobserve(entry.target);
-                }
-            });
-        }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+    var hasGSAP = !!(window.gsap && window.ScrollTrigger);
 
-        document.querySelectorAll('.reveal').forEach(function (el) {
-            io.observe(el);
-        });
-    } else {
-        // Fallback para navegadores sin IntersectionObserver: muestra todo.
-        document.querySelectorAll('.reveal').forEach(function (el) {
-            el.classList.add('is-visible');
-        });
-    }
-
-    // Nav: backdrop-filter + estado sólido al hacer scroll.
-    // Usa rAF para no recalcular en cada scroll event.
+    // ── Nav: estado scrolled con rAF (siempre, GSAP o no) ────────
     var nav = document.querySelector('.site-nav');
     if (nav) {
-        var scrolled = false;
-        var ticking = false;
+        var scrolled = false, ticking = false;
         function updateNav() {
-            var shouldBeScrolled = window.scrollY > 24;
-            if (shouldBeScrolled !== scrolled) {
-                scrolled = shouldBeScrolled;
+            var should = window.scrollY > 24;
+            if (should !== scrolled) {
+                scrolled = should;
                 nav.classList.toggle('is-scrolled', scrolled);
             }
             ticking = false;
         }
         window.addEventListener('scroll', function () {
-            if (!ticking) {
-                requestAnimationFrame(updateNav);
-                ticking = true;
-            }
+            if (!ticking) { requestAnimationFrame(updateNav); ticking = true; }
         }, { passive: true });
         updateNav();
+    }
+
+    // ── Branch: GSAP si está, IO si no ───────────────────────
+    if (hasGSAP) {
+        gsap.registerPlugin(ScrollTrigger);
+        // Marca que GSAP tomó el control: desactiva el reveal CSS nativo
+        // (ver regla `html.js:not(.gsap-ready) .reveal`).
+        document.documentElement.classList.add('gsap-ready');
+
+        var mm = gsap.matchMedia();
+
+        // ── Reduce motion OFF: animaciones completas ─────
+        mm.add('(prefers-reduced-motion: no-preference)', function () {
+            // 1) Hero entrance: timeline en cascada
+            var heroTL = gsap.timeline({ defaults: { ease: 'power3.out' } });
+            heroTL
+                .from('.hero .badge',          { y: 18, opacity: 0, duration: 0.6 })
+                .from('.hero-emoji',           { scale: 0.6, opacity: 0, rotation: -6, duration: 0.9 }, '-=0.4')
+                .from('.hero h1',              { y: 28, opacity: 0, duration: 0.7 }, '-=0.6')
+                .from('.hero .subtitle',       { y: 18, opacity: 0, duration: 0.6 }, '-=0.5')
+                .from('.hero .btn-group .btn', { y: 16, opacity: 0, duration: 0.5, stagger: 0.12 }, '-=0.4');
+
+            // 2) Hero parallax: al desplazar la sección hero, los elementos
+            //    se desplazan a distintas velocidades y se desvanecen.
+            var heroScrubTL = gsap.timeline({
+                scrollTrigger: {
+                    trigger: '.hero',
+                    start: 'top top',
+                    end: 'bottom top',
+                    scrub: 0.6
+                }
+            });
+            heroScrubTL
+                .to('.hero-emoji',     { y: -140, rotation: 6,  ease: 'none' }, 0)
+                .to('.hero h1, .hero .badge', { y: -60, opacity: 0.15, ease: 'none' }, 0)
+                .to('.hero .subtitle', { y: -35,  opacity: 0, ease: 'none' }, 0)
+                .to('.hero .btn-group',{ y: -20,  opacity: 0, ease: 'none' }, 0);
+
+            // 3) Reveal-on-scroll (todos los .reveal, incluido el stats)
+            gsap.utils.toArray('.reveal').forEach(function (el) {
+                gsap.from(el, {
+                    opacity: 0,
+                    y: 30,
+                    duration: 0.8,
+                    ease: 'power2.out',
+                    scrollTrigger: {
+                        trigger: el,
+                        start: 'top 88%',
+                        once: true
+                    }
+                });
+            });
+
+            // 4) Counter-up para .stat-number (lee data-count)
+            gsap.utils.toArray('.stat-number').forEach(function (el) {
+                var target = parseInt(el.dataset.count, 10);
+                if (isNaN(target)) return;
+                ScrollTrigger.create({
+                    trigger: el,
+                    start: 'top 85%',
+                    once: true,
+                    onEnter: function () {
+                        var obj = { val: 0 };
+                        gsap.to(obj, {
+                            val: target,
+                            duration: 1.6,
+                            ease: 'power2.out',
+                            onUpdate: function () {
+                                el.textContent = Math.round(obj.val).toLocaleString('es-ES');
+                            }
+                        });
+                    }
+                });
+            });
+
+            // 5) Demo interactivo: click en prompt → respuesta animada
+            var prompts = document.querySelectorAll('.demo-box .prompt-example');
+            var resp    = document.getElementById('demo-response');
+            if (prompts.length && resp) {
+                var responses = [
+                    '🍂 <strong>Calabaza del huerto, queso de cabra curado</strong><br><em>Historia:</em> un paseo por el bosque en octubre. La calabaza se asa a baja temperatura y el queso se funde sobre ella. Maridaje: <strong>vino dulce de cosecha</strong>.',
+                    '🍫 <strong>Chocolate & AOVE — el clásico revisitado</strong><br><em>Truco:</em> el aceite de oliva virgen extra potencia el amargor del cacao. Termina con <strong>flor de sal y ralladura de naranja</strong>.',
+                    '🥩 <strong>Solomillo en 7 tiempos</strong><br><em>Foco:</em> cada tiempo cuenta un capítulo de la historia: crudo, brasa, reposo, salsa, recuerdo, silencio, servicio.',
+                    '🟤 <strong>Risotto & trufa — la gala hecha tiempo</strong><br><em>Método:</em> risotto de setas de temporada coronado en mesa con láminas de trufa negra. Caldo montado, parmesano fuera de fuego.',
+                    '🌅 <strong>Bocadillo del mediterráneo</strong><br><em>Estilo:</em> tomate del maresme con anchoas en salazón, pan con tomate y AOVE. Cero fuegos, máxima memoria.'
+                ];
+                prompts.forEach(function (p, i) {
+                    p.setAttribute('role', 'button');
+                    p.setAttribute('tabindex', '0');
+                    p.setAttribute('aria-controls', 'demo-response');
+                    function activate() {
+                        prompts.forEach(function (x) { x.classList.remove('is-active'); });
+                        p.classList.add('is-active');
+                        gsap.killTweensOf(resp);
+                        gsap.fromTo(resp,
+                            { opacity: 0, y: 10 },
+                            {
+                                opacity: 1, y: 0, duration: 0.5, ease: 'power2.out',
+                                onStart: function () { resp.innerHTML = responses[i] || ''; }
+                            }
+                        );
+                    }
+                    p.addEventListener('click', activate);
+                    p.addEventListener('keydown', function (e) {
+                        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activate(); }
+                    });
+                });
+            }
+
+            return function () { /* cleanup si matchMedia revierte */ };
+        });
+
+        // ── Reduce motion ON con GSAP: nada se mueve, todo se ve ─────
+        mm.add('(prefers-reduced-motion: reduce)', function () {
+            document.querySelectorAll('.reveal').forEach(function (el) {
+                el.classList.add('is-visible');
+            });
+            document.querySelectorAll('.stat-number').forEach(function (el) {
+                var target = parseInt(el.dataset.count, 10);
+                if (!isNaN(target)) el.textContent = target.toLocaleString('es-ES');
+            });
+            return function () {};
+        });
+
+    } else {
+        // ── Fallback: IO nativo + valores finales sin animar ──────
+        document.querySelectorAll('.stat-number').forEach(function (el) {
+            var target = parseInt(el.dataset.count, 10);
+            if (!isNaN(target)) el.textContent = target.toLocaleString('es-ES');
+        });
+
+        if ('IntersectionObserver' in window) {
+            var io = new IntersectionObserver(function (entries) {
+                entries.forEach(function (entry) {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('is-visible');
+                        io.unobserve(entry.target);
+                    }
+                });
+            }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+            document.querySelectorAll('.reveal').forEach(function (el) { io.observe(el); });
+        } else {
+            document.querySelectorAll('.reveal').forEach(function (el) {
+                el.classList.add('is-visible');
+            });
+        }
+
+        // Demo interactivo sin GSAP: toggle simple
+        var prompts = document.querySelectorAll('.demo-box .prompt-example');
+        var resp = document.getElementById('demo-response');
+        if (prompts.length && resp) {
+            var responses = [
+                '🍂 <strong>Calabaza del huerto, queso de cabra curado</strong>',
+                '🍫 <strong>Chocolate & AOVE — el clásico revisitado</strong>',
+                '🥩 <strong>Solomillo en 7 tiempos</strong>',
+                '🟤 <strong>Risotto & trufa — la gala hecha tiempo</strong>',
+                '🌅 <strong>Bocadillo del mediterráneo</strong>'
+            ];
+            prompts.forEach(function (p, i) {
+                p.setAttribute('role', 'button');
+                p.setAttribute('tabindex', '0');
+                p.addEventListener('click', function () {
+                    prompts.forEach(function (x) { x.classList.remove('is-active'); });
+                    p.classList.add('is-active');
+                    resp.innerHTML = responses[i] || '';
+                });
+            });
+        }
     }
 })();
 </script>
