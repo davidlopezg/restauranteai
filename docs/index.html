@@ -9,6 +9,12 @@
     <meta property="og:description" content="Generador de fichas culinarias con IA para hostelería.">
     <meta property="og:type" content="website">
     <meta name="theme-color" content="#c44d34">
+
+    <!-- Tipografía curada: Fraunces (display, alma editorial/culinaria) + Inter (UI/cuerpo) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Inter:wght@400;500;600&display=swap">
+
     <style>
         /* ═══════════════════════════════════════════════════════════════════
            Chef Creativo — Landing Page (Refinamiento Nivel 1)
@@ -39,6 +45,11 @@
             /* Bordes */
             --border:        oklch(91% 0.015 70);
             --border-strong: oklch(85% 0.018 70);
+
+            /* Tipografía */
+            --font-display: 'Fraunces', Georgia, 'Times New Roman', serif;
+            --font-sans:    'Inter', system-ui, -apple-system, 'Segoe UI', Roboto,
+                            'Helvetica Neue', Arial, sans-serif;
 
             /* Misc */
             --gold:      oklch(55% 0.13 80);
@@ -82,20 +93,20 @@
 
         html {
             scroll-behavior: smooth;
+            scroll-padding-top: 80px;
             -webkit-text-size-adjust: 100%;
             text-rendering: optimizeLegibility;
         }
 
         body {
-            font-family: system-ui, -apple-system, 'Segoe UI', Roboto,
-                         'Helvetica Neue', Arial, sans-serif;
+            font-family: var(--font-sans);
             background: var(--bg);
             color: var(--text);
             line-height: 1.65;
             font-size: var(--fs-base);
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
-            font-feature-settings: 'kern', 'liga';
+            font-feature-settings: 'kern', 'liga', 'calt';
         }
 
         img, svg { display: block; max-width: 100%; }
@@ -129,29 +140,130 @@
             outline-offset: 2px;
         }
 
+        /* ── Site nav (fixed + blur-on-scroll) ────────────────────────── */
+        .site-nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 50;
+            padding: var(--space-3) 0;
+            background: transparent;
+            border-bottom: 1px solid transparent;
+            transition:
+                background var(--dur) var(--ease-out),
+                backdrop-filter var(--dur) var(--ease-out),
+                padding var(--dur) var(--ease-out),
+                border-color var(--dur) var(--ease-out);
+        }
+        .site-nav.is-scrolled {
+            background: oklch(98.5% 0.012 75 / 0.78);
+            backdrop-filter: blur(14px) saturate(1.5);
+            -webkit-backdrop-filter: blur(14px) saturate(1.5);
+            border-bottom-color: var(--border);
+            padding: 10px 0;
+        }
+        .site-nav-inner {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: var(--space-4);
+        }
+        .site-nav-brand {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-family: var(--font-display);
+            font-weight: 700;
+            font-variation-settings: 'opsz' 24;
+            font-size: 1.05rem;
+            color: var(--text-strong);
+            text-decoration: none;
+            letter-spacing: -0.01em;
+        }
+        .site-nav-brand:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 4px;
+            border-radius: 4px;
+        }
+        .site-nav-cta {
+            padding: 10px 18px;
+            font-size: var(--fs-sm);
+            border-radius: 999px;
+            box-shadow: 0 2px 10px rgba(196, 77, 52, 0.22);
+        }
+        @supports not (backdrop-filter: blur(1px)) {
+            .site-nav.is-scrolled {
+                background: var(--surface);
+            }
+        }
+
         /* ── Hero ──────────────────────────────────────────────────── */
         .hero {
+            position: relative;
             padding: var(--space-12) 0 var(--space-10);
             text-align: center;
+            overflow: hidden;
+        }
+        .hero::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(ellipse 80% 60% at 50% 0%, oklch(94% 0.07 30 / 0.55) 0%, transparent 60%),
+                radial-gradient(ellipse 70% 50% at 50% 0%, oklch(96% 0.04 60 / 0.4) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: -1;
+        }
+        .hero::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160' viewBox='0 0 160 160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.045 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+            opacity: 0.5;
+            pointer-events: none;
+            mix-blend-mode: multiply;
+            z-index: -1;
         }
         .hero-emoji {
             font-size: 4rem;
             margin-bottom: var(--space-2);
-            display: block;
-            filter: drop-shadow(0 4px 12px rgba(196, 77, 52, 0.18));
+            display: inline-block;
+            position: relative;
+            filter: drop-shadow(0 4px 12px rgba(196, 77, 52, 0.22));
             animation: floaty 6s var(--ease-out) infinite;
+        }
+        .hero-emoji::before {
+            content: '';
+            position: absolute;
+            inset: -28px -28px;
+            background: radial-gradient(circle, oklch(85% 0.12 30 / 0.35) 0%, transparent 65%);
+            z-index: -1;
+            border-radius: 50%;
+            animation: pulse-glow 5s var(--ease-out) infinite;
+        }
+        @keyframes pulse-glow {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50%      { opacity: 0.7; transform: scale(1.08); }
         }
         @keyframes floaty {
             0%, 100% { transform: translateY(0); }
             50%      { transform: translateY(-4px); }
         }
         .hero h1 {
+            font-family: var(--font-display);
             font-size: var(--fs-3xl);
-            font-weight: 800;
+            font-weight: 700;
+            font-variation-settings: 'opsz' 144;
             letter-spacing: -0.025em;
             color: var(--text-strong);
             margin-bottom: var(--space-3);
-            line-height: 1.05;
+            line-height: 1.04;
+        }
+        .hero h1 .accent-word {
+            font-style: italic;
+            font-weight: 500;
+            color: var(--accent-hover);
         }
         .hero .subtitle {
             font-size: var(--fs-lg);
@@ -239,12 +351,20 @@
             padding: var(--space-10) 0;
         }
         section h2 {
+            font-family: var(--font-display);
             font-size: var(--fs-xl);
-            font-weight: 700;
+            font-weight: 500;
+            font-variation-settings: 'opsz' 96;
             margin-bottom: var(--space-8);
             text-align: center;
-            letter-spacing: -0.015em;
+            letter-spacing: -0.02em;
             color: var(--text-strong);
+            line-height: 1.15;
+        }
+        section h2 .accent-word {
+            font-style: italic;
+            font-weight: 500;
+            color: var(--accent-hover);
         }
 
         /* ── Features grid (hover: lift + border accent) ───────────── */
@@ -469,6 +589,48 @@
             font-weight: 600;
         }
 
+        /* ── Tech stack (logo wall de badges) ────────────────────────── */
+        .tech-stack {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: var(--space-3);
+            margin-bottom: var(--space-6);
+        }
+        .tech-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 18px;
+            border-radius: 999px;
+            font-size: var(--fs-sm);
+            font-weight: 600;
+            border: 1.5px solid;
+            transition:
+                transform var(--dur) var(--ease-spring),
+                box-shadow var(--dur) var(--ease-out);
+        }
+        .tech-badge:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+        }
+        .tech-mark { font-size: 1.15rem; line-height: 1; }
+        .tech-name { font-family: var(--font-sans); letter-spacing: -0.01em; }
+        .tech-badge[data-color="model"]   { background: oklch(96% 0.04 280); color: oklch(35% 0.16 280); border-color: oklch(85% 0.08 280); }
+        .tech-badge[data-color="host"]    { background: oklch(97% 0.05 25);  color: oklch(40% 0.18 25);  border-color: oklch(85% 0.1 25); }
+        .tech-badge[data-color="lang"]    { background: oklch(96% 0.04 230); color: oklch(40% 0.16 230); border-color: oklch(85% 0.08 230); }
+        .tech-badge[data-color="ui"]      { background: oklch(96% 0.04 320); color: oklch(38% 0.18 320); border-color: oklch(85% 0.08 320); }
+        .tech-badge[data-color="license"] { background: var(--surface); color: var(--text-strong); border-color: var(--border-strong); }
+        .tech-note {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: var(--fs-sm);
+            max-width: 56ch;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+        .tech-note strong { color: var(--text); font-weight: 600; }
+
         /* ── Footer ────────────────────────────────────────────────── */
         footer {
             text-align: center;
@@ -543,6 +705,19 @@
 
 <a href="#main" class="skip-link">Saltar al contenido principal</a>
 
+<header class="site-nav" role="banner">
+    <div class="container site-nav-inner">
+        <a href="#el-chef-te-conoce" class="site-nav-brand" aria-label="Chef Creativo — inicio">
+            <span aria-hidden="true">🍂</span>
+            <span>Chef Creativo</span>
+        </a>
+        <a href="https://huggingface.co/spaces/davidlopezgamero/RestaurantEAI"
+           class="btn btn-primary site-nav-cta" target="_blank" rel="noopener">
+            Probar <span aria-hidden="true">→</span>
+        </a>
+    </div>
+</header>
+
 <!-- ═══════════════════════════════════════════════════════════════════════════
      HERO
      ═══════════════════════════════════════════════════════════════════════════ -->
@@ -551,7 +726,7 @@
     <div class="container">
         <span class="badge">MVP-0.5 · Desplegado en Hugging Face</span>
         <span class="hero-emoji" aria-hidden="true">🍂</span>
-        <h1>Chef Creativo</h1>
+        <h1>Chef <span class="accent-word">Creativo</span></h1>
         <p class="subtitle">
             Generador de fichas culinarias con inteligencia artificial.
             Describí un plato en lenguaje natural y recibí nombre evocador,
@@ -806,23 +981,33 @@
 <section aria-labelledby="h-tecnologia">
     <div class="container">
         <h2 id="h-tecnologia">Tecnología</h2>
-        <div class="features">
-            <article class="feature-card reveal">
-                <span class="icon" aria-hidden="true">🧠</span>
-                <h3>MiniMax-M3</h3>
-                <p>Modelo frontier con 1M de ventana de contexto. Razonamiento culinario de alto nivel.</p>
-            </article>
-            <article class="feature-card reveal">
-                <span class="icon" aria-hidden="true">🤗</span>
-                <h3>Hugging Face Spaces</h3>
-                <p>Desplegado en infraestructura gratuita de HF. Sin coste de servidor.</p>
-            </article>
-            <article class="feature-card reveal">
-                <span class="icon" aria-hidden="true">🐍</span>
-                <h3>Python + Gradio</h3>
-                <p>Backend en Python con httpx directo a la API. UI en Gradio 6. Código abierto (MIT).</p>
-            </article>
+        <div class="tech-stack">
+            <div class="tech-badge reveal" data-color="model">
+                <span class="tech-mark" aria-hidden="true">🧠</span>
+                <span class="tech-name">MiniMax-M3</span>
+            </div>
+            <div class="tech-badge reveal" data-color="host">
+                <span class="tech-mark" aria-hidden="true">🤗</span>
+                <span class="tech-name">Hugging Face Spaces</span>
+            </div>
+            <div class="tech-badge reveal" data-color="lang">
+                <span class="tech-mark" aria-hidden="true">🐍</span>
+                <span class="tech-name">Python</span>
+            </div>
+            <div class="tech-badge reveal" data-color="ui">
+                <span class="tech-mark" aria-hidden="true">🎛️</span>
+                <span class="tech-name">Gradio 6</span>
+            </div>
+            <div class="tech-badge reveal" data-color="license">
+                <span class="tech-mark" aria-hidden="true">⚖️</span>
+                <span class="tech-name">MIT License</span>
+            </div>
         </div>
+        <p class="tech-note reveal">
+            Modelo <strong>frontier</strong>, despliegue gratuito en HF,
+            backend en Python con <strong>httpx directo</strong> a la API y
+            UI en Gradio 6. Todo el código es abierto.
+        </p>
     </div>
 </section>
 
@@ -876,6 +1061,29 @@
         document.querySelectorAll('.reveal').forEach(function (el) {
             el.classList.add('is-visible');
         });
+    }
+
+    // Nav: backdrop-filter + estado sólido al hacer scroll.
+    // Usa rAF para no recalcular en cada scroll event.
+    var nav = document.querySelector('.site-nav');
+    if (nav) {
+        var scrolled = false;
+        var ticking = false;
+        function updateNav() {
+            var shouldBeScrolled = window.scrollY > 24;
+            if (shouldBeScrolled !== scrolled) {
+                scrolled = shouldBeScrolled;
+                nav.classList.toggle('is-scrolled', scrolled);
+            }
+            ticking = false;
+        }
+        window.addEventListener('scroll', function () {
+            if (!ticking) {
+                requestAnimationFrame(updateNav);
+                ticking = true;
+            }
+        }, { passive: true });
+        updateNav();
     }
 })();
 </script>
