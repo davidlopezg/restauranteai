@@ -190,6 +190,7 @@ Disponibles en cualquier skill (CLI y UI), con `chat` como default:
 | `/ficha <texto>` | Cambia a ficha técnica y la genera con ese texto |
 | `/proceso [texto]` | Arranca (o continúa) el Proceso Creativo de 7 fases |
 | `/ideas <texto>` | Cambia a ideas creativas y genera 10 ideas |
+| `/ideas-cien <texto>` | Cambia a idea científica (4 capas con datos moleculares) |
 | `/estado` | Ver progreso del Proceso Creativo (si hay sesión activa) |
 | `/fase N` o `/fase nombre` | Saltar a una fase específica del Proceso Creativo |
 | `/volver` | Regenerar la fase actual |
@@ -220,8 +221,9 @@ El Chef Creativo tiene un **sistema de skills extensible**. Cada skill tiene su 
 
 | Key | Nombre | Cuándo usarla | Comandos especiales |
 |---|---|---|---|
-| `chat` | Chat con el chef (default) | Conversación libre: preguntas, asesoría, consulta sobre producto/técnica/carta | `/skill`, `/ficha`, `/proceso`, `/ideas` (dispatch) |
+| `chat` | Chat con el chef (default) | Conversación libre: preguntas, asesoría, consulta sobre producto/técnica/carta | `/skill`, `/ficha`, `/proceso`, `/ideas`, `/ideas-cien` (dispatch) |
 | `ficha` | Ficha técnica | Ya sabés qué ficha querés | (ninguno, one-shot) |
+| `idea_cientifica` | Idea científica | Combinaciones disruptivas con datos moleculares (PubChem + mapping curado) estructuradas en 4 capas: Base/Contraste/Textura/Viabilidad | `/ideas-cien <texto>` |
 | `proceso_creativo` | Proceso creativo | Querés ver el razonamiento paso a paso con persistencia | `/estado`, `/fase N`, `/volver`, `/ficha`, `/reiniciar`, `/sesiones`, `/reanudar` |
 | `ideas_creativas` | Ideas creativas | Querés **explorar** 10 ideas antes de comprometerte | `más ideas`, `aplicá [método] a la idea N`, `ficha de la idea N`, `ver métodos` |
 

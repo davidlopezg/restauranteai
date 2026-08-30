@@ -408,3 +408,39 @@ La skill `ideas_creativas` (en `agents/creativo/skills.py:54-66`, con handler en
 **Actualización (2026-07-02 tarde):** verifiqué con `{action: "get"}` de cada agent — `sdd-proposal`, `sdd-spec`, `sdd-design`, `sdd-tasks`, `sdd-archive` SÍ tienen `write`/`edit`. Solo `sdd-explore` (y posiblemente `sdd-status`) carecen de escritura. **Workaround ya no es necesario** para todas las fases excepto `sdd-explore` (donde sí tuve que sintetizar yo el explore.md). Para futuras fases, el subagent persiste solo — yo solo delego y reviso.
 
 **Pendiente inmediato:** delegar `sdd-proposal` con el workaround del contenido inline.
+### 2026-08-30 — Sistema híbrido para el agente: Flavor Engine + (futuro) Spoonacular + LLM
+
+**Contexto:** Para que el Chef Creativo proponga combinaciones realmente útiles (no alucinaciones), necesita combinar tres capas:
+1. **Motor de divergencia química** (qué compuestos comparten los ingredientes).
+2. **Ancla de viabilidad** (qué recipes reales existen con esos ingredientes).
+3. **Cerebro analítico** (LLM que estructura la propuesta + restricciones operativas).
+
+**Decisión tomada:**
+- **Capa 1 (Flavor Engine)**: ✅ Implementado en este commit.
+  - Mapping curado de 84 ingredientes mediterráneos con CIDs PubChem (`conocimiento/fuentes_externas/flavor_data/flavor_mapping.json`).
+  - Cliente PubChem REST con caché SQLite para ~140 ingredientes adicionales on-demand.
+  - Módulo `agents/herramientas/flavor_engine.py` con API pública: `get_profile`, `get_compounds`, `get_compound_overlap`, `suggest_pairings`, `flavor_summary`.
+  - **No usamos FlavorDB completo** (50 MB) por restricción de espacio en móvil — estrategia "mobile-first" con mapping curado progresivo.
+
+- **Capa 2 (Spoonacular)**: ⏸ Diferido.
+  - Requiere `SPOONACULAR_API_KEY` (David no la tiene aún).
+  - Cuando esté: módulo `agents/herramientas/spoonacular.py` + integración en skill `idea_cientifica`.
+
+- **MCP server**: ❌ Descartado por ahora.
+  - Agrega complejidad sin beneficio claro (el agente es el único cliente).
+  - Si en el futuro se quiere exponer a clientes externos (Claude Desktop, etc.), se puede revivir.
+
+- **n8n / Ollama / DeepSeek local**: ❌ Fuera de scope.
+  - Son orquestadores externos; el agente funciona con MiniMax como LLM único.
+
+**Skill integrada:** `idea_cientifica` con system prompt estructurado en 4 capas (Base, Contraste, Textura, Viabilidad operativa). Dispatch:
+- CLI: `python -m agents.creativo.agent ideas-cien "..."`
+- Chat: `/ideas-cien <texto>` (desde cualquier skill activa)
+- Skill dedicada: `/skill idea_cientifica`
+
+**Tests:** 33 nuevos tests (15 flavor_engine + 18 skill_idea_cientifica). Total suite: 194 tests passing.
+
+**Pendiente:**
+- Crecer el mapping curado a 200+ ingredientes (David lo puede hacer editando el JSON).
+- Integrar Spoonacular cuando haya API key.
+- Sumar constraints operativos del restaurante al prompt (equipment, cadencia).

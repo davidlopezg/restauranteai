@@ -967,6 +967,223 @@ def procesar_mensaje_chat(peticion: str) -> str:
         return f"❌ Error ({type(e).__name__}): {str(e)[:200]}"
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Skill "idea_cientifica" — flavor engine + razonamiento estructurado
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+def _extract_ingredient_mentions(text: str) -> list[str]:
+    """
+    Detecta qué ingredientes del mapping aparecen mencionados en el texto.
+    Usa match por subcadena con normalización de acentos + variantes
+    singular/plural. Devuelve nombres canónicos del mapping.
+    """
+    import re
+
+    from agents.herramientas.flavor_engine import _load_curated_mapping, _normalize
+
+    curated, query_only = _load_curated_mapping()
+    text_norm = _normalize(text)
+    matches: list[str] = []
+    seen: set[str] = set()
+
+    def _variants(name: str) -> list[str]:
+        """Genera variantes singular/plural para match más laxo."""
+        v = [name]
+        # plural -> singular básico
+        if name.endswith("as"):
+            v.append(name[:-2])  # fresas -> fresa
+        elif name.endswith("es"):
+            v.append(name[:-2])  # limones -> limon
+        elif name.endswith("s"):
+            v.append(name[:-1])  # ajos -> ajo
+        # singular -> plural básico
+        else:
+            if name.endswith("a"):
+                v.append(name + "s")  # fresa -> fresas
+            elif name.endswith("r") or name.endswith("n"):
+                v.append(name + "es")  # limon -> limones
+            else:
+                v.append(name + "s")  # ajo -> ajos
+        return list(set(v))
+
+    def _match_any(entry_name: str) -> bool:
+        for variant in _variants(entry_name):
+            pattern = r"\b" + re.escape(variant) + r"\b"
+            if re.search(pattern, text_norm):
+                return True
+        return False
+
+    # Curados primero (tienen datos verificados).
+    for entry in curated:
+        ing = entry["ingredient"]
+        ing_norm = _normalize(ing)
+        if ing_norm in seen:
+            continue
+        if _match_any(ing_norm):
+            matches.append(ing)
+            seen.add(ing_norm)
+
+    # Query-only después.
+    for entry in query_only:
+        ing = entry["ingredient"]
+        ing_norm = _normalize(ing)
+        if ing_norm in seen:
+            continue
+        if _match_any(ing_norm):
+            matches.append(ing)
+            seen.add(ing_norm)
+
+    return matches
+
+
+def _build_flavor_context_block(peticion: str, max_pairings: int = 8) -> str:
+    """
+    Construye un bloque de contexto a inyectar en el system prompt con los
+    datos del flavor engine relevantes para la petición del usuario.
+
+    Para cada ingrediente detectado:
+    - Lista su perfil aromático (CID, nombre, role).
+    - Top N sugerencias de pairing por afinidad química.
+    - Para el primer ingrediente, también muestra overlap con el segundo si hay 2.
+
+    Si no se detecta ningún ingrediente curado, devuelve string vacío
+    (el LLM recibirá solo el system prompt base).
+    """
+    from agents.herramientas.flavor_engine import (
+        flavor_summary,
+        get_compound_overlap,
+        get_profile,
+        suggest_pairings,
+    )
+
+    ingredientes = _extract_ingredient_mentions(peticion)
+    if not ingredientes:
+        return ""
+
+    lines: list[str] = ["\n\n[CONTEXTO MOLECULAR DEL FLAVOR ENGINE — usá estos datos]"]
+    lines.append(
+        "El motor de flavor consultó tu petición y encontró los siguientes ingredientes. "
+        "Para cada uno te paso el perfil aromático (compuestos clave con CIDs de PubChem) "
+        "y los pairings sugeridos por afinidad química (solapamiento de compuestos).\n"
+    )
+
+    for ing in ingredientes[:4]:  # cap a 4 ingredientes para no saturar el contexto
+        profile = get_profile(ing)
+        if profile is None:
+            lines.append(f"### {ing}\n  (sin datos en el motor — usá intuición culinaria)\n")
+            continue
+
+        lines.append(f"### {ing}  [{profile.category}, fuente: {profile.source}]")
+        if profile.compounds:
+            for c in profile.compounds:
+                lines.append(
+                    f"  - {c.name} [CID {c.cid}, {c.role}] → https://pubchem.ncbi.nlm.nih.gov/compound/{c.cid}"
+                )
+
+        pairings = suggest_pairings(ing, top_k=max_pairings)
+        if pairings:
+            lines.append("  Pairings por afinidad química:")
+            for p in pairings:
+                shared_names = ", ".join(c.name for c in p.shared_compounds[:2])
+                more = f" (+{len(p.shared_compounds) - 2})" if len(p.shared_compounds) > 2 else ""
+                lines.append(
+                    f"    · {p.ingredient_b} (score {p.score:.0%}, comparten: {shared_names}{more})"
+                )
+        lines.append("")
+
+    # Si hay exactamente 2 ingredientes detectados, mostrar overlap explícito.
+    if len(ingredientes) >= 2:
+        a, b = ingredientes[0], ingredientes[1]
+        overlap = get_compound_overlap(a, b)
+        if overlap:
+            pa = get_profile(a)
+            pb = get_profile(b)
+            if pa and pb:
+                shared_compounds = [c for c in pa.compounds if c.cid in overlap]
+                shared_names = ", ".join(c.name for c in shared_compounds) if shared_compounds else "(CIDs sin nombre)"
+                lines.append(
+                    f"### 🔗 OVERLAP EXPLÍCITO: {a} ↔ {b}\n"
+                    f"  Comparten {len(overlap)} compuesto(s): {shared_names}.\n"
+                    f"  Usá este puente molecular como base de tu propuesta."
+                )
+
+    lines.append(
+        "\n⚠️ INSTRUCCIÓN: estos datos son VERIFICABLES. Cuando cites compuestos, "
+        "usá EXACTAMENTE los nombres y CIDs de arriba. NO inventes compuestos."
+    )
+    return "\n".join(lines)
+
+
+def procesar_mensaje_idea_cientifica(peticion: str) -> str:
+    """
+    Handler de la skill 'idea_cientifica'.
+
+    Carga el system prompt, lo enriquece con el contexto del restaurante
+    y el bloque de datos del flavor engine (perfiles aromáticos + pairings
+    por afinidad química), y devuelve la respuesta estructurada del chef.
+
+    Args:
+        peticion: texto libre del usuario (ej. "topping con base de alcachofa").
+
+    Returns:
+        String con la respuesta estructurada (Base/Contraste/Textura/Viabilidad).
+    """
+    mensaje = (peticion or "").strip()
+    if not mensaje:
+        return ""
+
+    # 1. Cargar prompt de la skill
+    system_prompt = load_skill_prompt("idea_cientifica")
+
+    # 2. Inyectar contexto del restaurante
+    restaurante = load_restaurante()
+    restaurante_str = formatear_restaurante_para_chef(restaurante)
+    if restaurante_str:
+        system_prompt = system_prompt + restaurante_str
+
+    # 3. Inyectar catálogo de platos
+    catalogo = load_catalogo()
+    catalogo_str = formatear_catalogo_para_chef(catalogo)
+    if catalogo_str:
+        system_prompt = system_prompt + catalogo_str
+
+    # 4. Inyectar datos del flavor engine (el corazón de esta skill)
+    try:
+        flavor_block = _build_flavor_context_block(mensaje, max_pairings=6)
+        if flavor_block:
+            system_prompt = system_prompt + flavor_block
+    except Exception as e:
+        # Si el flavor engine falla, seguimos sin él (no bloqueamos la skill).
+        system_prompt = system_prompt + (
+            f"\n\n[NOTA INTERNA — flavor engine no disponible: {e}]. "
+            f"Trabajá desde intuición culinaria y marcalo en tus respuestas."
+        )
+
+    # 5. Recordatorio de idioma
+    instruccion_idioma = (
+        "\n\n---\n\n⚠️ RECORDATORIO FINAL — INSTRUCCIÓN DE IDIOMA OBLIGATORIA ⚠️\n\n"
+        "Responde a esta petición escrita en español **única y exclusivamente en español** (castellano). "
+        "PROHIBIDO responder en inglés u otro idioma en cualquier parte de tu respuesta. "
+        "Si tu respuesta contiene términos en otro idioma, ES UN ERROR. "
+        "Re-escribe todo en español antes de devolverla.\n\n"
+        "PROHIBIDO también: caracteres cirílicos (rusos), hanzi (chinos), hangul (coreanos), "
+        "kanji (japoneses). Solo alfabeto latino."
+    )
+    user_message = mensaje + instruccion_idioma
+
+    # 6. Llamada al modelo
+    try:
+        print(
+            f"🔬 Generando idea científica para: \"{mensaje}\"...\n",
+            file=sys.stderr,
+        )
+        respuesta = call_minimax(system_prompt, user_message)
+        return respuesta
+    except Exception as e:
+        return f"❌ Error ({type(e).__name__}): {str(e)[:200]}"
+
+
 def iniciar_proceso_creativo(peticion: str, sesion_id: str | None = None):
     """
     Inicia (o reanuda) una sesión del proceso creativo.
@@ -1622,10 +1839,29 @@ def main():
                     print(cmd_result["content"])
                     continue
             except Exception as e:
-                print(f"⚠️ Error en archivo de ideas: {e}")
+                print(f"�️ Error en archivo de ideas: {e}")
                 continue
             # ── end ARCHIVO DE IDEAS ──
             print(_proc_ideas(msg))
+        return
+
+    if len(sys.argv) > 1 and sys.argv[1] == "ideas-cien":
+        # Modo CLI directo para idea científica (skill 'idea_cientifica'):
+        #   python -m agents.creativo.agent ideas-cien [peticion]
+        peticion_inicial = " ".join(sys.argv[2:]).strip() if len(sys.argv) > 2 else None
+        if peticion_inicial:
+            print(procesar_mensaje_idea_cientifica(peticion_inicial))
+        while True:
+            try:
+                msg = input("➤ ").strip()
+            except (EOFError, KeyboardInterrupt):
+                print("\n¡Hasta luego!")
+                break
+            if not msg:
+                continue
+            if msg.lower() in ("salir", "exit", "quit"):
+                break
+            print(procesar_mensaje_idea_cientifica(msg))
         return
 
     if len(sys.argv) > 1 and sys.argv[1] == "pc":

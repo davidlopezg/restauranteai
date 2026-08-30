@@ -41,3 +41,7 @@ output/
 # Conocimiento específico del restaurante (generado en fase init, NO commitear)
 # Datos dinámicos del restaurante, generados por la fase init.
 conocimiento/interno_restaurante/
+
+# Caché local del flavor engine (PubChem cache + futuras caches de Spoonacular)
+conocimiento/fuentes_externas/flavor_data/*.db
+conocimiento/fuentes_externas/flavor_data/*.db-*

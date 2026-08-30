@@ -68,6 +68,19 @@ SKILLS: list[dict] = [
         ],
     },
     {
+        "key": "idea_cientifica",
+        "nombre": "Idea científica",
+        "descripcion": "Combina intuición culinaria con datos moleculares (PubChem + mapping curado) para proponer combinaciones disruptivas pero viables. Estructura cada propuesta en 4 capas: Base, Contraste, Textura, Viabilidad operativa.",
+        "prompt_path": PROMPTS_DIR / "system_idea_cientifica.md",
+        "ejemplos": [
+            "Topping con base de alcachofa",
+            "Postre con fresas y algo inesperado",
+            "Combinación molecular para untable de queso de cabra",
+            "Tres ideas para emulsionar aceite con ingredientes inesperados",
+            "Pairing molecular con chocolate negro para menú de invierno"
+        ],
+    },
+    {
         "key": "chat",
         "nombre": "Chat con el chef",
         "descripcion": "Conversación libre con el chef. Hacele preguntas sobre producto, técnica, carta, estacionalidad, proveedores — usa todo el contexto del restaurante.",

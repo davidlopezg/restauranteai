@@ -224,6 +224,32 @@ def _dispatch_comando(mensaje: str) -> dict:
             }
         return _responder_ideas_desde_chat(peticion)
 
+    # ── /ideas-cien <petición> ───────────────────────────────────────────
+    # Idea científica: combina intuición culinaria con el motor de flavor (PubChem).
+    if lower.startswith("/ideas-cien"):
+        peticion = msg[len("/ideas-cien"):].strip()
+        if not peticion:
+            return {
+                "role": "assistant",
+                "content": (
+                    "❌ `/ideas-cien` necesita una petición.\n"
+                    "Uso: `/ideas-cien <texto>` para generar ideas con datos moleculares.\n"
+                    "Ejemplos: `/ideas-cien topping con base de alcachofa`, "
+                    "`/ideas-cien combinación molecular para chocolate negro`."
+                ),
+            }
+        try:
+            from agents.creativo.agent import procesar_mensaje_idea_cientifica
+            return {
+                "role": "assistant",
+                "content": procesar_mensaje_idea_cientifica(peticion),
+            }
+        except Exception as e:
+            return {
+                "role": "assistant",
+                "content": f"❌ Error generando idea científica: {e}",
+            }
+
     # ── Comandos del proceso creativo (con sesión activa) ──
     # Comandos que solo tienen sentido con sesión activa:
     comandos_pc_con_sesion = ("/estado", "/volver", "/reiniciar", "/fase")
