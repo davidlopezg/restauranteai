@@ -763,6 +763,55 @@
             }
         }
 
+        /* ── Cursor dot (Nivel 4: solo desktop) ──────────────────────── */
+        .cursor-dot {
+            position: fixed;
+            top: -4px;
+            left: -4px;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent);
+            pointer-events: none;
+            z-index: 200;
+            opacity: 0;
+            transition:
+                width var(--dur) var(--ease-out),
+                height var(--dur) var(--ease-out),
+                top var(--dur) var(--ease-out),
+                left var(--dur) var(--ease-out),
+                background var(--dur) var(--ease-out),
+                opacity var(--dur) var(--ease-out);
+            mix-blend-mode: multiply;
+            will-change: transform;
+        }
+        .cursor-dot.is-active { opacity: 1; }
+        .cursor-dot.is-hover {
+            width: 32px;
+            height: 32px;
+            top: -16px;
+            left: -16px;
+            background: oklch(53% 0.16 28 / 0.35);
+        }
+        @media (pointer: coarse) {
+            .cursor-dot { display: none; }
+        }
+
+        /* ── Hero particles canvas (Nivel 4) ────────────────────────────── */
+        .hero-canvas {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0.55;
+        }
+
+        /* ── Tilt cards (Nivel 4) ─────────────────────────────────────────── */
+        .feature-card, .step, .fase-card {
+            transform-style: preserve-3d;
+            will-change: transform;
+        }
+
         /* ── Responsive ────────────────────────────────────────────── */
         @media (max-width: 600px) {
             section { padding: var(--space-8) 0; }
@@ -1328,6 +1377,139 @@
             });
         }
     }
+
+    /* =====================================================================
+       NIVEL 4 — Wow effects (siempre se ejecutan, independientes de GSAP)
+
+       - VanillaTilt en cards: parallax 3D al pasar el ratón
+       - Canvas partículas (hero): especias que flotan hacia arriba
+       - Custom cursor: dot que crece en elementos interactivos (desktop)
+       - Todo respeta prefers-reduced-motion y pointer: coarse
+       ===================================================================== */
+
+    // ── VanillaTilt: parallax 3D en cards ───────────────────────
+    function initTilt() {
+        if (!window.VanillaTilt) return;
+        var cards = document.querySelectorAll('.feature-card, .step, .fase-card');
+        if (!cards.length) return;
+        // VanillaTilt espera data-tilt; algunos elementos ya lo tendrán,
+        // pero inicializamos por elemento para evitar problemas de selección.
+        window.VanillaTilt.init(cards, {
+            max: 6,
+            speed: 500,
+            glare: true,
+            'max-glare': 0.18,
+            scale: 1.015,
+            perspective: 1200,
+            reset: true,
+            transition: true,
+            easing: 'cubic-bezier(.03,.98,.52,.99)'
+        });
+    }
+
+    // ── Partículas: especias flotando en el hero ────────────────
+    function initParticles() {
+        var hero = document.querySelector('.hero');
+        if (!hero) return;
+        // Skip on coarse pointers (touch) o si el usuario pidió reduced motion
+        var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        var coarse  = window.matchMedia('(pointer: coarse)').matches;
+        if (reduced || coarse) return;
+
+        var canvas = document.createElement('canvas');
+        canvas.className = 'hero-canvas';
+        hero.insertBefore(canvas, hero.firstChild);
+        var ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        var particles = [];
+        var dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+        function resize() {
+            var r = hero.getBoundingClientRect();
+            canvas.width  = Math.floor(r.width  * dpr);
+            canvas.height = Math.floor(r.height * dpr);
+            canvas.style.width  = r.width  + 'px';
+            canvas.style.height = r.height + 'px';
+            ctx.scale(dpr, dpr);
+            var count = Math.min(28, Math.floor((r.width * r.height) / 36000));
+            particles = [];
+            for (var i = 0; i < count; i++) {
+                particles.push({
+                    x: Math.random() * r.width,
+                    y: Math.random() * r.height,
+                    r: 1.2 + Math.random() * 2.2,
+                    vy: -(0.15 + Math.random() * 0.35),
+                    vx: (Math.random() - 0.5) * 0.18,
+                    a: 0.18 + Math.random() * 0.32,
+                    hue: Math.random() < 0.7 ? 196 : 25, // terracotta vs warm
+                    sat: 55,
+                    light: 50
+                });
+            }
+        }
+
+        function frame() {
+            var w = canvas.width / dpr;
+            var h = canvas.height / dpr;
+            ctx.clearRect(0, 0, w, h);
+            for (var i = 0; i < particles.length; i++) {
+                var p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                if (p.y < -8 || p.x < -8 || p.x > w + 8) {
+                    p.x = Math.random() * w;
+                    p.y = h + 8;
+                }
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                ctx.fillStyle = 'hsla(' + p.hue + ',' + p.sat + '%,' + p.light + '%,' + p.a + ')';
+                ctx.fill();
+            }
+            requestAnimationFrame(frame);
+        }
+
+        resize();
+        frame();
+        var ro = new ResizeObserver(resize);
+        ro.observe(hero);
+    }
+
+    // ── Custom cursor dot (solo desktop) ─────────────────────
+    function initCursor() {
+        if (window.matchMedia('(pointer: coarse)').matches) return;
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+        var dot = document.createElement('div');
+        dot.className = 'cursor-dot';
+        document.body.appendChild(dot);
+
+        var mx = 0, my = 0, dx = 0, dy = 0, active = false, ticking = false;
+
+        function loop() {
+            dx += (mx - dx) * 0.18;
+            dy += (my - dy) * 0.18;
+            dot.style.transform = 'translate3d(' + dx + 'px,' + dy + 'px,0)';
+            ticking = false;
+        }
+        document.addEventListener('mousemove', function (e) {
+            mx = e.clientX; my = e.clientY;
+            if (!active) { dot.classList.add('is-active'); active = true; }
+            if (!ticking) { requestAnimationFrame(loop); ticking = true; }
+        }, { passive: true });
+        document.addEventListener('mouseover', function (e) {
+            if (e.target.closest('a, button, .btn, [role="button"], .prompt-example'))
+                dot.classList.add('is-hover');
+        });
+        document.addEventListener('mouseout', function (e) {
+            if (e.target.closest('a, button, .btn, [role="button"], .prompt-example'))
+                dot.classList.remove('is-hover');
+        });
+    }
+
+    initTilt();
+    initParticles();
+    initCursor();
 })();
 </script>
 
