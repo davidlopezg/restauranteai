@@ -14,13 +14,14 @@ short_description: "Chef IA: fichas y proceso creativo"
 
 # 🍂 Chef Creativo — RestaurantEAI
 
-> Estado: **MVP-3** — Chef Creativo con 3 skills (ficha + proceso creativo + ideas creativas), conocimiento del restaurante y carta inyectados automáticamente. Deployado en Hugging Face Spaces. End-to-end con la API oficial de MiniMax.
+> Estado: **MVP-3** — Chef Creativo con **4 skills** (ficha + proceso creativo + ideas creativas + chat), conocimiento del restaurante y carta inyectados automáticamente. Deployado en Hugging Face Spaces. End-to-end con la API oficial de MiniMax.
 
-**¿Qué es?** Ecosistema de agentes IA para restauración. El **Chef Creativo** ofrece tres modos, todos con conocimiento automático de tu restaurante (ticket, línea culinaria, carta) y catálogo de platos:
+**¿Qué es?** Ecosistema de agentes IA para restauración. El **Chef Creativo** ofrece cuatro modos, todos con conocimiento automático de tu restaurante (ticket, línea culinaria, carta) y catálogo de platos:
 
 1. 🍂 **Ficha técnica** — Una petición → ficha estructurada (nombre, historia, ficha técnica, maridaje, prompt de imagen).
-2. 🧠 **Proceso creativo** — State machine de 7 fases que muestra **cómo piensa el chef** paso a paso, con persistencia entre sesiones y comandos para iterar.
-3. 💡 **Ideas creativas** — 10 ideas variadas para explorar (renovar carta, ideas de temporada, llenar huecos), con refinamiento vía métodos creativos de ElBulli.
+2. � **Proceso creativo** — State machine de 7 fases que muestra **cómo piensa el chef** paso a paso, con persistencia entre sesiones y comandos para iterar.
+3. � **Ideas creativas** — 10 ideas variadas para explorar (renovar carta, ideas de temporada, llenar huecos), con refinamiento vía métodos creativos de ElBulli.
+4. 💬 **Chat con el chef** — Conversación libre por defecto (en CLI y UI), siempre con el contexto del restaurante cargado.
 
 **¿Cómo se usa?** Abrí el chat y escribí tu petición. El chef responde con el contexto de tu restaurante siempre presente:
 
@@ -62,7 +63,7 @@ short_description: "Chef IA: fichas y proceso creativo"
 | MVP-0: Agente Chef Creativo (CLI local) | ✅ | Validado end-to-end |
 | MVP-0.5: Deploy en Hugging Face Space | ✅ | https://huggingface.co/spaces/davidlopezgamero/RestaurantEAI |
 | MVP-1: Landing page | ✅ | `docs/index.html` |
-| MVP-1.1: Sistema de skills | ✅ | 3 skills: ficha, proceso_creativo, ideas_creativas |
+| MVP-1.1: Sistema de skills | ✅ | 4 skills: ficha, proceso_creativo, ideas_creativas, chat (default) |
 | MVP-2: Proceso creativo con state machine | ✅ | 7 fases + persistencia + comandos |
 | MVP-3: Ideas creativas | ✅ | 10 ideas + iteración con métodos ElBulli + ficha |
 | Conocimiento automático del restaurante | ✅ | restaurante.json + catalogo_platos.json inyectados al chef |
@@ -81,9 +82,9 @@ short_description: "Chef IA: fichas y proceso creativo"
 
 ## Diagrama de flujo
 
-El diagrama de flujo completo del sistema (init phase, 3 skills, persistencia, detección de idioma, destinos) está en [`docs/FLOW.md`](docs/FLOW.md). Es un diagrama Mermaid — abrílo en [mermaid.live](https://mermaid.live/) o cualquier visor Mermaid para verlo renderizado.
+El diagrama de flujo completo del sistema (init phase, 4 skills, persistencia, detección de idioma, destinos) está en [`docs/FLOW.md`](docs/FLOW.md). Es un diagrama Mermaid — abrílo en [mermaid.live](https://mermaid.live/) o cualquier visor Mermaid para verlo renderizado.
 
-**Resumen del flujo en una línea**: Init phase (carga restaurante + carta) → Knowledge inyectado automáticamente en cada skill → 3 skills disponibles (ficha / proceso creativo / ideas creativas) → Detección de idioma con reintentos → Deploy a HF Space + backup en GitHub.
+**Resumen del flujo en una línea**: Init phase (carga restaurante + carta) → Knowledge inyectado automáticamente en cada skill → 4 skills disponibles (ficha / proceso creativo / ideas creativas / chat) con dispatch por comandos (`/ficha`, `/proceso`, `/ideas`, mensaje libre) → Detección de idioma con reintentos → Deploy a HF Space + backup en GitHub.
 
 
 ## Quick start (local)
@@ -126,32 +127,88 @@ python -m agents.init_phase
 
 Te hace 15 preguntas sobre el restaurante + te permite pegar tu carta/menú completo (recomendado) o meter los platos uno a uno. Genera `.agent_knowledge/restaurante.json` y `.agent_knowledge/catalogo_platos.json`.
 
-### 5. Probar las 3 skills
+### 5. Probar el agente desde la terminal
 
-**Modo interactivo** (selector de skill al inicio):
+> 💡 **El modo por defecto es `chat`**. Abrís el chat y, dentro del mismo chat, dispatchás a las otras skills con `/ficha`, `/proceso` o `/ideas`. No hay selector de skill al inicio (esa decisión se removió: el chat es el punto de entrada único).
+
+**Modo interactivo (REPL)** — chat por defecto + dispatch por comandos:
 
 ```bash
+cd ~/repos/restauranteia
 python -m agents.creativo.agent
 ```
 
-**Ficha rápida**:
+Vas a ver algo así:
+
+```
+============================================================
+🍂 Chef Creativo — Modo Interactivo
+============================================================
+
+✓ Skill activa: Chat con el chef
+  Escribí lo que quieras — el chef responde usando el contexto del restaurante.
+  Cuando quieras una skill específica, tipeá /skill (o /skills para listar).
+
+➤ _
+```
+
+**Ficha rápida one-shot** (genera y sale):
 
 ```bash
 python -m agents.creativo.agent "Risotto de setas con trufa"
 ```
 
-**Proceso creativo**:
+**Proceso creativo directo** (arranca el state machine):
 
 ```bash
 python -m agents.creativo.agent pc "Risotto de setas con trufa"
 python -m agents.creativo.agent pc --reanudar SESION_ID
 ```
 
-**Ideas creativas**:
+**Ideas creativas directo** (loop de exploración):
 
 ```bash
 python -m agents.creativo.agent ideas "Ideas para otoño"
 ```
+
+**Atajo con alias (opcional)** — si querés un comando corto, en Termux:
+
+```bash
+echo "alias chef='cd ~/repos/restauranteia && python -m agents.creativo.agent'" >> ~/.bashrc
+source ~/.bashrc
+chef
+```
+
+#### 💬 Comandos in-session (dentro del REPL)
+
+Disponibles en cualquier skill (CLI y UI), con `chat` como default:
+
+| Comando | Qué hace |
+|---|---|
+| `/skills` | Lista las 4 skills con descripción |
+| `/skill` | Cambia de skill (te muestra un menú numerado) |
+| `/ficha <texto>` | Cambia a ficha técnica y la genera con ese texto |
+| `/proceso [texto]` | Arranca (o continúa) el Proceso Creativo de 7 fases |
+| `/ideas <texto>` | Cambia a ideas creativas y genera 10 ideas |
+| `/estado` | Ver progreso del Proceso Creativo (si hay sesión activa) |
+| `/fase N` o `/fase nombre` | Saltar a una fase específica del Proceso Creativo |
+| `/volver` | Regenerar la fase actual |
+| `/ficha` | (en Proceso Creativo) generar ficha final |
+| `/reiniciar` | (en Proceso Creativo) volver al inicio con la misma petición |
+| `/sesiones` | Listar sesiones guardadas del Proceso Creativo |
+| `/reanudar <id>` | Retomar una sesión anterior |
+| `/guardar [texto]` | Guardá una idea nueva (Archivo de Ideas) |
+| `/guardar` (sin args) | Guardá el último mensaje del chef como idea |
+| `/guardar N` | Guardá la idea N de una lista numerada |
+| `/editar N <texto>` | Editá idea N |
+| `/lista-ideas [filtro]` | Listá ideas guardadas (filtro opcional por texto) |
+| `/olvidar N` / `/olvidar todo` | Borrar idea N o todo (con confirmación) |
+| `/export-ideas` | Exportá todas las ideas a JSON |
+| `/silenciar-contador` | Mostrar/ocultar el contador `📁 N guardadas` |
+| `/ayuda` | Listar todos los comandos disponibles |
+| `salir` / `exit` / `quit` / `Ctrl+C` | Terminar el REPL |
+
+> Cualquier mensaje **sin prefijo** se trata como chat libre con el chef (siempre con el contexto del restaurante inyectado).
 
 ---
 
@@ -163,15 +220,18 @@ El Chef Creativo tiene un **sistema de skills extensible**. Cada skill tiene su 
 
 | Key | Nombre | Cuándo usarla | Comandos especiales |
 |---|---|---|---|
+| `chat` | Chat con el chef (default) | Conversación libre: preguntas, asesoría, consulta sobre producto/técnica/carta | `/skill`, `/ficha`, `/proceso`, `/ideas` (dispatch) |
 | `ficha` | Ficha técnica | Ya sabés qué ficha querés | (ninguno, one-shot) |
 | `proceso_creativo` | Proceso creativo | Querés ver el razonamiento paso a paso con persistencia | `/estado`, `/fase N`, `/volver`, `/ficha`, `/reiniciar`, `/sesiones`, `/reanudar` |
 | `ideas_creativas` | Ideas creativas | Querés **explorar** 10 ideas antes de comprometerte | `más ideas`, `aplicá [método] a la idea N`, `ficha de la idea N`, `ver métodos` |
 
 ### Cómo elegir skill
 
-**En la UI web**: selector Radio en la parte superior del chat (automático con 3 opciones).
+**En la UI web (Gradio)**: el chat es único — no hay Radio ni selector. Las skills se invocan con comandos al inicio del mensaje (`/ficha`, `/proceso`, `/ideas`). Mensaje sin prefijo = chat libre.
 
-**En CLI**: el `modo_interactivo` te pregunta al inicio, y podés cambiar con `/skill` en cualquier momento.
+**En CLI**: el `modo_interactivo` arranca directamente en `chat` (no pregunta skill). Dentro del chat dispatchás a las otras con `/ficha`, `/proceso`, `/ideas` o usás el cambio legacy `/skill` + menú numerado.
+
+**Entry points directos** (sin pasar por el chat): `python -m agents.creativo.agent "..."` (ficha), `pc "..."`, `ideas "..."`.
 
 ### Cómo agregar una skill nueva
 
@@ -441,7 +501,7 @@ Cada vez que genera una ficha o trabaja una fase, el system prompt se enriquece 
 restauranteia/
 ├── agents/
 │   ├── creativo/                       # Agente Chef Creativo
-│   │   ├── agent.py                    # Entry point CLI + handlers de las 3 skills
+│   │   ├── agent.py                    # Entry point CLI + handlers de las 4 skills (chat es default)
 │   │   ├── skills.py                   # Registry de skills (extensible)
 │   │   ├── proceso_creativo.py         # State machine de 7 fases + persistencia
 │   │   ├── sessions.py                 # CRUD de sesiones en .agent_knowledge/
