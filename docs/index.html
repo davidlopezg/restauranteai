@@ -21,6 +21,9 @@
     <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/ScrollTrigger.min.js" defer></script>
 
+    <!-- Vanilla-Tilt: parallax 3D en cards (Nivel 4) - ~8.5KB minified -->
+    <script src="https://cdn.jsdelivr.net/npm/vanilla-tilt@1.8.1/dist/vanilla-tilt.min.js" defer></script>
+
     <style>
         /* ═══════════════════════════════════════════════════════════════════
            Chef Creativo — Landing Page (Refinamiento Nivel 1)
@@ -390,7 +393,6 @@
                 border-color var(--dur) var(--ease-out);
         }
         .feature-card:hover {
-            transform: translateY(-3px);
             box-shadow: 0 8px 24px rgba(0, 0, 0, 0.07);
             border-color: var(--border-strong);
         }
@@ -526,7 +528,6 @@
                 border-color var(--dur) var(--ease-out);
         }
         .step:hover {
-            transform: translateY(-3px);
             box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
             border-color: var(--border-strong);
         }
@@ -591,7 +592,6 @@
                 box-shadow var(--dur) var(--ease-out);
         }
         .fase-card:hover {
-            transform: translateX(2px);
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
         }
         .fase-card .fase-num {
